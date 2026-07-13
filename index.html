@@ -181,7 +181,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
   <div id="chart-container">
     <div id="chart"></div>
     <div id="controls">
-      <button class="ctrl-btn" id="home-btn" style="background:rgba(102,126,234,0.85);border-color:#667eea;color:#fff;display:none;" title="返回首页">&#127968; 首页</button>
+      <button class="ctrl-btn" id="home-btn" style="background:rgba(102,126,234,0.85);border-color:#667eea;color:#fff;display:none;letter-spacing:2px;padding:6px 14px;" title="返回首页">&#127968; 首页</button>
       <button class="ctrl-btn active" data-filter="all">全部关系</button>
       <button class="ctrl-btn" data-filter="strong_colleague">强相关同事</button>
       <button class="ctrl-btn" data-filter="weak_colleague">弱相关同事</button>
@@ -778,7 +778,7 @@ function renderCompanyView(filter) {
     var fq = filter.toLowerCase();
     topCompanies = allCompanies.filter(function(e) { return e[0].toLowerCase().includes(fq); });
   } else {
-    topCompanies = allCompanies.slice(0, 20);
+    topCompanies = allCompanies;
   }
   
   var chartNodes = [];
@@ -800,15 +800,15 @@ function renderCompanyView(filter) {
         addedNodes.add(p);
         chartNodes.push({
           name: p,
-          symbolSize: 8,
-          itemStyle: { color: '#667eea', borderColor: '#444', borderWidth: 0, opacity: 0.45 },
-          label: { show: false },
+          symbolSize: 16,
+          itemStyle: { color: '#667eea', borderColor: '#555', borderWidth: 1, opacity: 0.85 },
+          label: { show: true, fontSize: 11, color: '#e0e0e0', position: 'bottom', fontWeight: 500 },
           category: 1
         });
       }
       chartEdges.push({
         source: company, target: p,
-        lineStyle: { color: '#4ecdc4', width: 0.6, opacity: 0.18, curveness: 0.1 }
+        lineStyle: { color: '#4ecdc4', width: 1.2, opacity: 0.35, curveness: 0.1 }
       });
     });
   });
@@ -831,7 +831,7 @@ function renderCompanyView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 700, gravity: 0.04, edgeLength: [100, 250], friction: 0.55 },
+      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.55 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '公司', itemStyle: { color: '#4ecdc4' } },
@@ -851,7 +851,7 @@ function renderSchoolView(filter) {
     var fq = filter.toLowerCase();
     topSchools = allSchools.filter(function(e) { return e[0].toLowerCase().includes(fq); });
   } else {
-    topSchools = allSchools.slice(0, 20);
+    topSchools = allSchools;
   }
   
   var chartNodes = [];
@@ -873,15 +873,15 @@ function renderSchoolView(filter) {
         addedNodes.add(p);
         chartNodes.push({
           name: p,
-          symbolSize: 8,
-          itemStyle: { color: '#667eea', borderColor: '#444', borderWidth: 0, opacity: 0.45 },
-          label: { show: false },
+          symbolSize: 16,
+          itemStyle: { color: '#667eea', borderColor: '#555', borderWidth: 1, opacity: 0.85 },
+          label: { show: true, fontSize: 11, color: '#e0e0e0', position: 'bottom', fontWeight: 500 },
           category: 1
         });
       }
       chartEdges.push({
         source: school, target: p,
-        lineStyle: { color: '#a78bfa', width: 0.6, opacity: 0.18, curveness: 0.1 }
+        lineStyle: { color: '#a78bfa', width: 1.2, opacity: 0.35, curveness: 0.1 }
       });
     });
   });
@@ -904,7 +904,7 @@ function renderSchoolView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 700, gravity: 0.04, edgeLength: [100, 250], friction: 0.55 },
+      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.55 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '学校', itemStyle: { color: '#a78bfa' } },
@@ -1195,10 +1195,13 @@ function renderChart(centerName) {
         shadowColor: isCenter ? 'rgba(102,126,234,0.5)' : (isKey ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)')
       },
       label: {
-        show: isCenter || isKey || (NODE_DEGREES[n] || 0) >= 10,
-        fontSize: isCenter ? 14 : (isKey ? 12 : 11),
-        fontWeight: isCenter ? 'bold' : (isKey ? 'bold' : 'normal'),
-        color: isCenter ? '#fff' : (isKey ? '#000' : '#ddd')
+        show: true,
+        fontSize: isCenter ? 14 : (isKey ? 12 : 12),
+        fontWeight: isCenter ? 'bold' : (isKey ? 'bold' : '600'),
+        color: isCenter ? '#fff' : (isKey ? '#000' : '#222'),
+        textBorderColor: isCenter ? 'rgba(0,0,0,0.5)' : (isKey ? 'rgba(255,215,0,0.6)' : 'rgba(255,255,255,0.8)'),
+        textBorderWidth: isCenter ? 2 : 1,
+        position: 'inside'
       },
       category: isCenter ? 0 : getCategory(n)
     };
@@ -1212,7 +1215,7 @@ function renderChart(centerName) {
         color: EDGE_COLORS[e.type] || '#666',
         width: e.type === 'strong_colleague' ? 3 : (e.type === 'weak_colleague' ? 2 : 1.5),
         curveness: 0.2,
-        opacity: 0.7
+        opacity: 0.85
       },
       label: { show: false }
     };
@@ -1236,7 +1239,7 @@ function renderChart(centerName) {
               color: EDGE_COLORS[e.type] || '#444',
               width: 1,
               curveness: 0.3,
-              opacity: 0.3,
+              opacity: 0.5,
               type: 'dashed'
             }
           });
