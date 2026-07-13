@@ -128,8 +128,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <div id="search-results"></div>
     
     <div id="path-finder">
-      <input id="path-person-a" placeholder="输入第一个人姓名..." />
-      <input id="path-person-b" placeholder="输入第二个人姓名..." />
+      <div style="position:relative;">
+        <input id="path-person-a" placeholder="输入第一个人姓名..." autocomplete="off" />
+        <div id="path-dropdown-a" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:140px;overflow-y:auto;background:#1a1a2e;border:1px solid #444;border-radius:6px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+      </div>
+      <div style="position:relative;">
+        <input id="path-person-b" placeholder="输入第二个人姓名..." autocomplete="off" />
+        <div id="path-dropdown-b" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:140px;overflow-y:auto;background:#1a1a2e;border:1px solid #444;border-radius:6px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+      </div>
       <button class="path-btn" id="find-path-btn">&#128279; 查找最短关系路径</button>
       <div id="path-result"></div>
     </div>
@@ -142,17 +148,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         <button id="clear-compare-btn" style="margin-left:auto;background:none;border:1px solid #444;color:#888;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;">清除</button>
       </div>
       <div style="display:flex;gap:4px;margin-bottom:8px;">
-        <input id="compare-input-a" placeholder="输入名字A" style="flex:1;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" list="compare-datalist-a">
-        <datalist id="compare-datalist-a"></datalist>
-        <input id="compare-input-b" placeholder="输入名字B" style="flex:1;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" list="compare-datalist-b">
-        <datalist id="compare-datalist-b"></datalist>
+        <div style="flex:1;position:relative;">
+          <input id="compare-input-a" placeholder="输入名字A" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" autocomplete="off">
+          <div id="compare-dropdown-a" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:140px;overflow-y:auto;background:#1a1a2e;border:1px solid #444;border-radius:6px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+        </div>
+        <div style="flex:1;position:relative;">
+          <input id="compare-input-b" placeholder="输入名字B" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" autocomplete="off">
+          <div id="compare-dropdown-b" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:140px;overflow-y:auto;background:#1a1a2e;border:1px solid #444;border-radius:6px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+        </div>
         <button id="compare-go-btn" style="padding:6px 10px;border:1px solid #667eea;border-radius:6px;background:#667eea;color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;">对比</button>
       </div>
       <div id="compare-content"></div>
     </div>
     
     <div id="tag-filter">
-      <div style="font-size:12px;color:#888;margin-bottom:6px;">点击技能标签筛选相关人才</div>
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">搜索或点击技能标签筛选人才（支持多选）</div>
+      <div style="position:relative;">
+        <input id="tag-search" type="text" placeholder="输入技能标签..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:6px 10px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:12px;margin-bottom:2px;outline:none;" />
+        <div id="tag-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:160px;overflow-y:auto;background:#1a1a2e;border:1px solid #444;border-radius:6px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+      </div>
+      <div style="margin-bottom:6px;margin-top:4px;">
+        <span id="tag-selected" style="font-size:11px;color:#667eea;display:none;"></span>
+        <span id="tag-clear-btn" style="font-size:11px;color:#ff6b6b;cursor:pointer;display:none;margin-left:8px;" onclick="clearAllTags()">清除全部</span>
+      </div>
       <div class="tag-list" id="tag-list"></div>
       <div id="tag-result" style="margin-top:8px;font-size:12px;color:#888;"></div>
     </div>
@@ -180,8 +198,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
   </div>
   <div id="chart-container">
     <div id="welcome-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:999;">
-      <div style="color:#4a9eff;font-size:44px;font-weight:700;text-shadow:0 0 20px rgba(74,158,255,0.5);margin-bottom:20px;">人才社交网络图</div>
-      <div style="color:#8ab4f8;font-size:18px;line-height:1.8;text-align:center;">在左侧搜索框输入人才名字开始探索<br/><br/>或点击底部「公司视图」「学校视图」浏览</div>
+      <div style="background:rgba(10,10,30,0.85);backdrop-filter:blur(6px);border-radius:20px;padding:40px 60px;text-align:center;box-shadow:0 4px 30px rgba(0,0,0,0.5);">
+        <div style="color:#4a9eff;font-size:44px;font-weight:700;text-shadow:0 0 20px rgba(74,158,255,0.5);margin-bottom:20px;">人才社交网络图</div>
+        <div style="color:#8ab4f8;font-size:18px;line-height:1.8;">在左侧搜索框输入人才名字开始探索<br/><br/>或点击底部「公司视图」「学校视图」浏览</div>
+      </div>
     </div>
     <div id="chart"></div>
     <div id="controls">
@@ -242,7 +262,7 @@ let currentPerson = null;
 let currentFilter = "all";
 let currentView = "network";
 let compareA = null, compareB = null;
-let activeTag = null;
+let activeTags = [];
 let pathHighlightNodes = null;
 
 // ====== Pre-computations ======
@@ -344,21 +364,43 @@ function switchSidebarTab(tab) {
 
 // ====== Tag Filter ======
 function renderTagList() {
+  var searchEl = document.getElementById('tag-search');
+  var keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
   var sorted = Object.entries(allTags).sort(function(a,b) { return b[1] - a[1]; });
+  if (keyword) {
+    sorted = sorted.filter(function(entry) { return entry[0].toLowerCase().includes(keyword); });
+  }
   var html = '';
   sorted.forEach(function(entry) {
     var tag = entry[0], count = entry[1];
-    var cls = activeTag === tag ? 'tag-chip active' : 'tag-chip';
+    var isActive = activeTags.indexOf(tag) !== -1;
+    var cls = isActive ? 'tag-chip active' : 'tag-chip';
     html += '<div class="' + cls + '" data-tag="' + tag + '">' + tag + ' (' + count + ')</div>';
   });
   document.getElementById('tag-list').innerHTML = html;
+  // Update selected indicator
+  var selEl = document.getElementById('tag-selected');
+  var clrEl = document.getElementById('tag-clear-btn');
+  if (activeTags.length > 0) {
+    selEl.textContent = '已选 ' + activeTags.length + ' 个: ' + activeTags.join(', ');
+    selEl.style.display = '';
+    clrEl.style.display = '';
+  } else {
+    selEl.style.display = 'none';
+    clrEl.style.display = 'none';
+  }
 }
 
 function toggleTag(tag) {
-  activeTag = activeTag === tag ? null : tag;
+  var idx = activeTags.indexOf(tag);
+  if (idx !== -1) {
+    activeTags.splice(idx, 1);
+  } else {
+    activeTags.push(tag);
+  }
   renderTagList();
-  if (activeTag) {
-    highlightByTag(activeTag);
+  if (activeTags.length > 0) {
+    highlightByTag(activeTags);
   } else {
     document.getElementById('tag-result').innerHTML = '';
     if (currentPerson) renderChart(currentPerson);
@@ -366,13 +408,29 @@ function toggleTag(tag) {
   }
 }
 
-function highlightByTag(tag) {
+function clearAllTags() {
+  activeTags = [];
+  renderTagList();
+  document.getElementById('tag-result').innerHTML = '';
+  if (currentPerson) renderChart(currentPerson);
+  else renderWelcome();
+}
+
+function highlightByTag(tags) {
+  // 隐藏欢迎页封面
+  var overlay = document.getElementById('welcome-overlay');
+  if (overlay) overlay.style.display = 'none';
+
   var matchedNames = [];
   Object.entries(ALL_NODES).forEach(function(entry) {
     var name = entry[0], info = entry[1];
     if (info.tags) {
-      var tags = info.tags.split(",").map(function(t) { return t.trim(); });
-      if (tags.includes(tag)) matchedNames.push(name);
+      var nodeTags = info.tags.split(",").map(function(t) { return t.trim(); });
+      var match = false;
+      for (var i = 0; i < tags.length; i++) {
+        if (nodeTags.indexOf(tags[i]) !== -1) { match = true; break; }
+      }
+      if (match) matchedNames.push(name);
     }
   });
   
@@ -420,11 +478,11 @@ function highlightByTag(tag) {
       roam: true, draggable: true,
       force: { repulsion: 300, gravity: 0.1, edgeLength: [80, 200], friction: 0.6 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
-      categories: [{ name: tag, itemStyle: { color: '#667eea' } }]
+      categories: [{ name: 'matched', itemStyle: { color: '#667eea' } }]
     }]
   }, true);
   
-  var resultHtml = '<b style="color:#667eea">' + tag + '</b> 相关人才: ' + matchedNames.length + '人<br>';
+  var resultHtml = '<b style="color:#667eea">' + tags.join(' + ') + '</b> 相关人才: ' + matchedNames.length + '人<br>';
   matchedNames.slice(0, 20).forEach(function(n) {
     resultHtml += '<span class="result-item" style="display:inline;padding:2px 6px;cursor:pointer;" data-person="' + escName(n) + '"><span class="name">' + n + '</span></span> ';
   });
@@ -523,6 +581,11 @@ function findPath() {
 }
 
 function highlightPath(pathNodes, pathEdges) {
+  var overlay = document.getElementById('welcome-overlay');
+  if (overlay) overlay.style.display = 'none';
+  var homeBtn = document.getElementById('home-btn');
+  if (homeBtn) homeBtn.style.display = '';
+
   var pathSet = new Set(pathNodes);
   var allNames = new Set();
   ALL_EDGES.forEach(function(e) {
@@ -923,6 +986,11 @@ function renderSchoolView(filter) {
 }
 
 function renderTimelineView() {
+  var overlay = document.getElementById('welcome-overlay');
+  if (overlay) overlay.style.display = 'none';
+  var homeBtn = document.getElementById('home-btn');
+  if (homeBtn) homeBtn.style.display = '';
+
   var companyTimeline = {};
   Object.entries(ALL_NODES).forEach(function(entry) {
     var name = entry[0], info = entry[1];
@@ -1444,6 +1512,94 @@ document.addEventListener('click', function(e) {
 var searchInput = document.getElementById('search-input');
 var searchResults = document.getElementById('search-results');
 var allNameList = Object.keys(ALL_NODES).sort();
+
+// Tag search with autocomplete dropdown
+var tagSearchInput = document.getElementById('tag-search');
+var tagDropdown = document.getElementById('tag-dropdown');
+
+tagSearchInput.addEventListener('input', function() {
+  renderTagList();
+  var q = this.value.trim().toLowerCase();
+  if (!q) { tagDropdown.style.display = 'none'; return; }
+  
+  var allTagsSorted = Object.entries(allTags).sort(function(a,b) { return b[1] - a[1]; });
+  var matches = allTagsSorted.filter(function(entry) { return entry[0].toLowerCase().includes(q); }).slice(0, 10);
+  
+  if (matches.length === 0) { tagDropdown.style.display = 'none'; return; }
+  
+  var html = '';
+  matches.forEach(function(entry) {
+    var tag = entry[0], count = entry[1];
+    var isActive = activeTags.indexOf(tag) !== -1;
+    var bg = isActive ? '#667eea' : 'transparent';
+    var color = isActive ? '#fff' : '#e0e0e0';
+    html += '<div style="padding:8px 12px;cursor:pointer;color:' + color + ';background:' + bg + ';font-size:12px;border-bottom:1px solid #333;" data-dropdown-tag="' + escName(tag) + '">' + tag + ' (' + count + ')</div>';
+  });
+  tagDropdown.innerHTML = html;
+  tagDropdown.style.display = 'block';
+});
+
+tagDropdown.addEventListener('click', function(e) {
+  var tagEl = e.target.closest('[data-dropdown-tag]');
+  if (!tagEl) return;
+  var tag = tagEl.getAttribute('data-dropdown-tag');
+  toggleTag(tag);
+  tagSearchInput.value = '';
+  tagDropdown.style.display = 'none';
+});
+
+document.addEventListener('click', function(e) {
+  if (!tagSearchInput.contains(e.target) && !tagDropdown.contains(e.target)) {
+    tagDropdown.style.display = 'none';
+  }
+});
+
+// ====== Autocomplete for path finder and compare inputs ======
+function setupAutocomplete(inputId, dropdownId) {
+  var input = document.getElementById(inputId);
+  var dropdown = document.getElementById(dropdownId);
+  if (!input || !dropdown) return;
+
+  input.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    if (!q) { dropdown.style.display = 'none'; return; }
+    var matches = allNameList.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 10);
+    if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+    var html = '';
+    matches.forEach(function(n) {
+      var info = ALL_NODES[n];
+      var sub = info.company || info.school || '';
+      if (info.title) sub = info.title + (sub ? ' | ' + sub : '');
+      html += '<div style="padding:8px 12px;cursor:pointer;color:#e0e0e0;font-size:12px;border-bottom:1px solid #333;" data-dropdown-name="' + escName(n) + '"><span style="color:#fff;font-weight:600;">' + n + '</span><span style="color:#888;margin-left:6px;font-size:11px;">' + sub + '</span></div>';
+    });
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+  });
+
+  input.addEventListener('focus', function() {
+    if (this.value.trim()) {
+      this.dispatchEvent(new Event('input'));
+    }
+  });
+
+  dropdown.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-dropdown-name]');
+    if (!el) return;
+    input.value = el.getAttribute('data-dropdown-name');
+    dropdown.style.display = 'none';
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+setupAutocomplete('path-person-a', 'path-dropdown-a');
+setupAutocomplete('path-person-b', 'path-dropdown-b');
+setupAutocomplete('compare-input-a', 'compare-dropdown-a');
+setupAutocomplete('compare-input-b', 'compare-dropdown-b');
 
 searchInput.addEventListener('input', function() {
   var q = this.value.trim().toLowerCase();
