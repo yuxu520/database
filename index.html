@@ -443,9 +443,10 @@ function highlightByTag(tags) {
   var chartNodes = Array.from(relevantNames).map(function(n) {
     var isMatched = matchedSet.has(n);
     var sz = nodeSizeByDegree(n);
+    var actualSz = isMatched ? Math.max(sz, 30) : Math.max(sz * 0.6, 10);
     return {
       name: n,
-      symbolSize: isMatched ? Math.max(sz, 30) : Math.max(sz * 0.6, 10),
+      symbolSize: actualSz,
       value: NODE_DEGREES[n] || 1,
       itemStyle: {
         color: isMatched ? '#667eea' : '#334',
@@ -453,7 +454,15 @@ function highlightByTag(tags) {
         borderWidth: isMatched ? 2 : 0,
         opacity: isMatched ? 1 : 0.3
       },
-      label: { show: isMatched, fontSize: 11, color: '#fff' }
+      label: {
+        show: true,
+        fontSize: isMatched ? 12 : 10,
+        fontWeight: isMatched ? 'bold' : 'normal',
+        color: isMatched ? '#fff' : '#e0e0e0',
+        textBorderColor: isMatched ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.6)',
+        textBorderWidth: 1,
+        position: actualSz >= 20 ? 'inside' : 'right'
+      }
     };
   });
   
@@ -1272,12 +1281,12 @@ function renderChart(centerName) {
       },
       label: {
         show: true,
-        fontSize: isCenter ? 14 : (isKey ? 12 : 12),
-        fontWeight: isCenter ? 'bold' : (isKey ? 'bold' : '600'),
-        color: isCenter ? '#fff' : (isKey ? '#000' : '#222'),
-        textBorderColor: isCenter ? 'rgba(0,0,0,0.5)' : (isKey ? 'rgba(255,215,0,0.6)' : 'rgba(255,255,255,0.8)'),
-        textBorderWidth: isCenter ? 2 : 1,
-        position: 'inside'
+        fontSize: isCenter ? 14 : 11,
+        fontWeight: isCenter ? 'bold' : '600',
+        color: isCenter ? '#fff' : (isKey ? '#000' : '#e0e0e0'),
+        textBorderColor: isCenter ? 'rgba(0,0,0,0.5)' : (isKey ? 'rgba(255,215,0,0.6)' : 'rgba(0,0,0,0.6)'),
+        textBorderWidth: 1,
+        position: sz >= 20 ? 'inside' : 'right'
       },
       category: isCenter ? 0 : getCategory(n)
     };
