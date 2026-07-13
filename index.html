@@ -181,6 +181,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
   <div id="chart-container">
     <div id="chart"></div>
     <div id="controls">
+      <button class="ctrl-btn" id="home-btn" style="background:rgba(102,126,234,0.85);border-color:#667eea;color:#fff;display:none;" title="返回首页">&#127968; 首页</button>
       <button class="ctrl-btn active" data-filter="all">全部关系</button>
       <button class="ctrl-btn" data-filter="strong_colleague">强相关同事</button>
       <button class="ctrl-btn" data-filter="weak_colleague">弱相关同事</button>
@@ -746,6 +747,7 @@ function switchView(view) {
     else renderWelcome();
   } else if (view === 'company') {
     filterBar.style.display = 'flex';
+    document.getElementById('home-btn').style.display = '';
     filterInput.placeholder = '输入公司名筛选';
     filterInput.value = '';
     var companies = Object.keys(companyPeople).sort(function(a,b) { return companyPeople[b].length - companyPeople[a].length; });
@@ -753,6 +755,7 @@ function switchView(view) {
     renderCompanyView();
   } else if (view === 'school') {
     filterBar.style.display = 'flex';
+    document.getElementById('home-btn').style.display = '';
     filterInput.placeholder = '输入学校名筛选';
     filterInput.value = '';
     var schools = Object.keys(schoolPeople).sort(function(a,b) { return schoolPeople[b].length - schoolPeople[a].length; });
@@ -775,7 +778,7 @@ function renderCompanyView(filter) {
     var fq = filter.toLowerCase();
     topCompanies = allCompanies.filter(function(e) { return e[0].toLowerCase().includes(fq); });
   } else {
-    topCompanies = allCompanies.slice(0, 30);
+    topCompanies = allCompanies.slice(0, 20);
   }
   
   var chartNodes = [];
@@ -786,9 +789,9 @@ function renderCompanyView(filter) {
     var company = entry[0], people = entry[1];
     chartNodes.push({
       name: company,
-      symbolSize: Math.max(30, Math.min(people.length * 4, 80)),
-      itemStyle: { color: '#4ecdc4', borderColor: '#fff', borderWidth: 2 },
-      label: { show: true, fontSize: 11, color: '#fff' },
+      symbolSize: Math.max(35, Math.min(people.length * 4, 70)),
+      itemStyle: { color: '#4ecdc4', borderColor: 'rgba(78,205,196,0.5)', borderWidth: 2, opacity: 0.9 },
+      label: { show: true, fontSize: 12, color: '#4ecdc4', position: 'bottom', distance: 10, fontWeight: 600 },
       category: 0
     });
     addedNodes.add(company);
@@ -797,15 +800,15 @@ function renderCompanyView(filter) {
         addedNodes.add(p);
         chartNodes.push({
           name: p,
-          symbolSize: 12,
-          itemStyle: { color: '#667eea', borderColor: '#333', borderWidth: 1, opacity: 0.7 },
+          symbolSize: 8,
+          itemStyle: { color: '#667eea', borderColor: '#444', borderWidth: 0, opacity: 0.45 },
           label: { show: false },
           category: 1
         });
       }
       chartEdges.push({
         source: company, target: p,
-        lineStyle: { color: '#4ecdc4', width: 1, opacity: 0.3, curveness: 0.1 }
+        lineStyle: { color: '#4ecdc4', width: 0.6, opacity: 0.18, curveness: 0.1 }
       });
     });
   });
@@ -828,8 +831,8 @@ function renderCompanyView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 500, gravity: 0.05, edgeLength: [60, 150], friction: 0.6 },
-      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+      force: { repulsion: 700, gravity: 0.04, edgeLength: [100, 250], friction: 0.55 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '公司', itemStyle: { color: '#4ecdc4' } },
         { name: '人才', itemStyle: { color: '#667eea' } }
@@ -848,7 +851,7 @@ function renderSchoolView(filter) {
     var fq = filter.toLowerCase();
     topSchools = allSchools.filter(function(e) { return e[0].toLowerCase().includes(fq); });
   } else {
-    topSchools = allSchools.slice(0, 30);
+    topSchools = allSchools.slice(0, 20);
   }
   
   var chartNodes = [];
@@ -859,9 +862,9 @@ function renderSchoolView(filter) {
     var school = entry[0], people = entry[1];
     chartNodes.push({
       name: school,
-      symbolSize: Math.max(30, Math.min(people.length * 5, 80)),
-      itemStyle: { color: '#a78bfa', borderColor: '#fff', borderWidth: 2 },
-      label: { show: true, fontSize: 11, color: '#fff' },
+      symbolSize: Math.max(35, Math.min(people.length * 5, 70)),
+      itemStyle: { color: '#a78bfa', borderColor: 'rgba(167,139,250,0.5)', borderWidth: 2, opacity: 0.9 },
+      label: { show: true, fontSize: 12, color: '#a78bfa', position: 'bottom', distance: 10, fontWeight: 600 },
       category: 0
     });
     addedNodes.add(school);
@@ -870,15 +873,15 @@ function renderSchoolView(filter) {
         addedNodes.add(p);
         chartNodes.push({
           name: p,
-          symbolSize: 12,
-          itemStyle: { color: '#667eea', borderColor: '#333', borderWidth: 1, opacity: 0.7 },
+          symbolSize: 8,
+          itemStyle: { color: '#667eea', borderColor: '#444', borderWidth: 0, opacity: 0.45 },
           label: { show: false },
           category: 1
         });
       }
       chartEdges.push({
         source: school, target: p,
-        lineStyle: { color: '#a78bfa', width: 1, opacity: 0.3, curveness: 0.1 }
+        lineStyle: { color: '#a78bfa', width: 0.6, opacity: 0.18, curveness: 0.1 }
       });
     });
   });
@@ -901,8 +904,8 @@ function renderSchoolView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 500, gravity: 0.05, edgeLength: [60, 150], friction: 0.6 },
-      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+      force: { repulsion: 700, gravity: 0.04, edgeLength: [100, 250], friction: 0.55 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '学校', itemStyle: { color: '#a78bfa' } },
         { name: '人才', itemStyle: { color: '#667eea' } }
@@ -946,14 +949,17 @@ function renderTimelineView() {
 
 // ====== Welcome Screen ======
 function renderWelcome() {
+  currentPerson = null;
+  var homeBtn = document.getElementById('home-btn');
+  if (homeBtn) homeBtn.style.display = 'none';
   chart.setOption({
     backgroundColor: '#0f0f23',
     title: {
       text: '人才社交网络图',
-      subtext: '← 在左侧搜索框输入人才名字开始探索\n\n或点击底部「公司视图」「学校视图」浏览',
+      subtext: '在左侧搜索框输入人才名字开始探索\n\n或点击底部「公司视图」「学校视图」浏览',
       left: 'center', top: 'center',
-      textStyle: { color: '#667eea', fontSize: 28, fontWeight: 700 },
-      subtextStyle: { color: '#888', fontSize: 14, lineHeight: 24 }
+      textStyle: { color: '#fff', fontSize: 32, fontWeight: 700, textShadow: { color: 'rgba(102,126,234,0.5)', blur: 10, offsetX: 0, offsetY: 2 } },
+      subtextStyle: { color: '#999', fontSize: 14, lineHeight: 26 }
     }
   }, true);
 }
@@ -1063,6 +1069,10 @@ function showPerson(name) {
   currentPerson = name;
   var info = ALL_NODES[name];
   if (!info) return;
+  
+  // Show home button when viewing a person
+  var homeBtn = document.getElementById('home-btn');
+  if (homeBtn) homeBtn.style.display = '';
   
   // Switch to search tab
   switchSidebarTab('search');
@@ -1313,6 +1323,18 @@ document.addEventListener('click', function(e) {
   
   // Control buttons
   if (target.classList.contains('ctrl-btn')) {
+    if (target.id === 'home-btn') {
+      currentView = 'network';
+      document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+      var nvb = document.querySelector('.view-btn[data-view="network"]');
+      if (nvb) nvb.classList.add('active');
+      document.getElementById('view-filter').style.display = 'none';
+      document.getElementById('timeline-panel').classList.remove('visible');
+      renderWelcome();
+      document.getElementById('person-detail').innerHTML = '<p style="color:#666;text-align:center;margin-top:40px;">&larr; 搜索并选择一个人才开始探索</p>';
+      document.getElementById('sidebar-footer').innerHTML = '';
+      return;
+    }
     var filter = target.getAttribute('data-filter');
     if (filter) toggleEdge(filter);
     return;
