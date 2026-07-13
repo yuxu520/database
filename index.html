@@ -3,60 +3,190 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>人才社交网络图</title>
+<title>人才社交网络图 V2</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f23; color: #e0e0e0; overflow: hidden; }
 #app { display: flex; height: 100vh; }
-#sidebar { width: 320px; background: #1a1a2e; border-right: 1px solid #333; display: flex; flex-direction: column; }
-#search-box { padding: 16px; border-bottom: 1px solid #333; }
+#sidebar { width: 340px; min-width: 340px; background: #1a1a2e; border-right: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+#sidebar-header { padding: 12px 16px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
+#sidebar-header h1 { font-size: 16px; color: #667eea; flex: 1; }
+.sidebar-tab { padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; background: #16213e; color: #888; border: 1px solid #333; transition: all 0.2s; }
+.sidebar-tab:hover, .sidebar-tab.active { background: #667eea; color: #fff; border-color: #667eea; }
+#search-box { padding: 12px 16px; border-bottom: 1px solid #333; }
 #search-input { width: 100%; padding: 10px 14px; border: 1px solid #444; border-radius: 8px; background: #16213e; color: #fff; font-size: 14px; outline: none; }
 #search-input:focus { border-color: #667eea; }
-#search-results { max-height: 300px; overflow-y: auto; border-bottom: 1px solid #333; }
-.result-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #222; transition: background 0.2s; }
+#search-results { max-height: 200px; overflow-y: auto; border-bottom: 1px solid #333; }
+.result-item { padding: 8px 16px; cursor: pointer; border-bottom: 1px solid #222; transition: background 0.2s; }
 .result-item:hover { background: #16213e; }
-.result-item .name { font-weight: 600; color: #667eea; }
-.result-item .info { font-size: 12px; color: #888; margin-top: 4px; }
+.result-item .name { font-weight: 600; color: #667eea; font-size: 13px; }
+.result-item .info { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* Path finder */
+#path-finder { padding: 12px 16px; border-bottom: 1px solid #333; display: none; }
+#path-finder.visible { display: block; }
+#path-finder input { width: 100%; padding: 8px 12px; border: 1px solid #444; border-radius: 6px; background: #16213e; color: #fff; font-size: 13px; outline: none; margin-bottom: 6px; }
+#path-finder input:focus { border-color: #667eea; }
+.path-btn { padding: 6px 12px; border: 1px solid #667eea; border-radius: 6px; background: transparent; color: #667eea; cursor: pointer; font-size: 12px; width: 100%; transition: all 0.2s; }
+.path-btn:hover { background: #667eea; color: #fff; }
+#path-result { margin-top: 8px; font-size: 12px; color: #888; max-height: 120px; overflow-y: auto; }
+
+/* Compare panel */
+#compare-panel { padding: 12px 16px; border-bottom: 1px solid #333; display: none; overflow-y: auto; max-height: 300px; }
+#compare-panel.visible { display: block; }
+.compare-section { margin-bottom: 10px; }
+.compare-title { font-size: 12px; color: #667eea; margin-bottom: 4px; font-weight: 600; }
+.compare-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.compare-col { flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 11px; }
+.compare-col.person-a { background: rgba(102,126,234,0.15); border: 1px solid rgba(102,126,234,0.3); }
+.compare-col.person-b { background: rgba(78,205,196,0.15); border: 1px solid rgba(78,205,196,0.3); }
+.compare-col.common { background: rgba(107,207,127,0.15); border: 1px solid rgba(107,207,127,0.3); }
+.compare-header { font-size: 12px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+/* Tag filter */
+#tag-filter { padding: 12px 16px; border-bottom: 1px solid #333; display: none; }
+#tag-filter.visible { display: block; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 150px; overflow-y: auto; }
+.tag-chip { padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; background: #16213e; color: #aaa; border: 1px solid #333; transition: all 0.2s; }
+.tag-chip:hover, .tag-chip.active { background: #667eea; color: #fff; border-color: #667eea; }
+
+/* Stats panel */
+#stats-panel { display: none; padding: 12px 16px; border-bottom: 1px solid #333; overflow-y: auto; max-height: 300px; }
+#stats-panel.visible { display: block; }
+.stats-section { margin-bottom: 12px; }
+.stats-title { font-size: 13px; color: #667eea; margin-bottom: 8px; font-weight: 600; }
+.stats-bar { display: flex; align-items: center; margin-bottom: 4px; font-size: 11px; }
+.stats-bar-label { width: 120px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats-bar-fill { flex: 1; height: 14px; background: #16213e; border-radius: 3px; overflow: hidden; margin: 0 6px; }
+.stats-bar-inner { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.stats-bar-count { width: 30px; text-align: right; color: #888; }
+
+/* Timeline */
+#timeline-panel { display: none; padding: 12px 16px; border-bottom: 1px solid #333; overflow-y: auto; max-height: 400px; }
+#timeline-panel.visible { display: block; }
+.timeline-item { display: flex; gap: 10px; margin-bottom: 8px; position: relative; }
+.timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #667eea; margin-top: 4px; flex-shrink: 0; }
+.timeline-content { flex: 1; font-size: 12px; }
+.timeline-company { color: #4ecdc4; font-weight: 600; }
+.timeline-person { color: #667eea; cursor: pointer; }
+.timeline-person:hover { text-decoration: underline; }
+
+/* Person detail */
 #person-detail { flex: 1; padding: 16px; overflow-y: auto; }
 #person-detail h2 { color: #667eea; margin-bottom: 12px; font-size: 20px; }
 .detail-row { margin-bottom: 8px; font-size: 13px; }
 .detail-label { color: #888; display: inline-block; width: 70px; }
 .detail-value { color: #e0e0e0; }
-#stats { padding: 12px 16px; border-top: 1px solid #333; font-size: 12px; color: #666; }
+.star-badge { display: inline-block; background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; font-weight: 700; vertical-align: middle; }
+
+/* Sidebar footer */
+#sidebar-footer { padding: 10px 16px; border-top: 1px solid #333; font-size: 11px; color: #666; }
+
+/* Chart area */
 #chart-container { flex: 1; position: relative; }
 #chart { width: 100%; height: 100%; }
-#legend { position: absolute; top: 16px; right: 16px; background: rgba(26,26,46,0.9); padding: 12px 16px; border-radius: 8px; border: 1px solid #333; }
-.legend-item { display: flex; align-items: center; margin-bottom: 6px; font-size: 12px; }
-.legend-color { width: 24px; height: 4px; border-radius: 2px; margin-right: 8px; }
-#controls { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; }
-.ctrl-btn { padding: 8px 14px; border: 1px solid #444; border-radius: 6px; background: rgba(26,26,46,0.9); color: #e0e0e0; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+#controls { position: absolute; top: 16px; left: 16px; display: flex; gap: 6px; flex-wrap: wrap; max-width: 60%; }
+.ctrl-btn { padding: 6px 12px; border: 1px solid #444; border-radius: 6px; background: rgba(26,26,46,0.92); color: #e0e0e0; cursor: pointer; font-size: 11px; transition: all 0.2s; white-space: nowrap; }
 .ctrl-btn:hover { background: #16213e; border-color: #667eea; }
 .ctrl-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+#legend { position: absolute; top: 16px; right: 16px; background: rgba(26,26,46,0.92); padding: 12px 16px; border-radius: 8px; border: 1px solid #333; }
+.legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 11px; }
+.legend-color { width: 24px; height: 4px; border-radius: 2px; margin-right: 8px; }
+#export-btn { margin-top: 8px; padding: 6px 12px; border: 1px solid #4ecdc4; border-radius: 6px; background: transparent; color: #4ecdc4; cursor: pointer; font-size: 11px; width: 100%; transition: all 0.2s; }
+#export-btn:hover { background: #4ecdc4; color: #000; }
+
+/* View mode buttons */
+#view-modes { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(26,26,46,0.92); padding: 8px 12px; border-radius: 8px; border: 1px solid #333; }
+.view-btn { padding: 6px 14px; border: 1px solid #444; border-radius: 6px; background: transparent; color: #aaa; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.view-btn:hover { border-color: #667eea; color: #fff; }
+.view-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+
 #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #667eea; font-size: 16px; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>&#127760; 人才网络</h1>
+      <div class="sidebar-tab active" data-tab="search" title="搜索">&#128269;</div>
+      <div class="sidebar-tab" data-tab="path" title="路径">&#128279;</div>
+      <div class="sidebar-tab" data-tab="compare" title="对比">&#9878;&#65039;</div>
+      <div class="sidebar-tab" data-tab="tags" title="技能">&#127991;&#65039;</div>
+      <div class="sidebar-tab" data-tab="stats" title="统计">&#128202;</div>
+    </div>
+    
     <div id="search-box">
       <input id="search-input" placeholder="搜索人才姓名..." autocomplete="off" />
     </div>
     <div id="search-results"></div>
-    <div id="person-detail">
-      <p style="color:#666;text-align:center;margin-top:40px;">← 搜索并选择一个人才开始</p>
+    
+    <div id="path-finder">
+      <input id="path-person-a" placeholder="输入第一个人姓名..." />
+      <input id="path-person-b" placeholder="输入第二个人姓名..." />
+      <button class="path-btn" id="find-path-btn">&#128279; 查找最短关系路径</button>
+      <div id="path-result"></div>
     </div>
-    <div id="stats"></div>
+    
+    <div id="compare-panel">
+      <div class="compare-header">
+        <span style="color:#667eea" id="compare-a-name">人物A</span>
+        <span style="color:#888">vs</span>
+        <span style="color:#4ecdc4" id="compare-b-name">人物B</span>
+        <button id="clear-compare-btn" style="margin-left:auto;background:none;border:1px solid #444;color:#888;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;">清除</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:8px;">
+        <input id="compare-input-a" placeholder="输入名字A" style="flex:1;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" list="compare-datalist-a">
+        <datalist id="compare-datalist-a"></datalist>
+        <input id="compare-input-b" placeholder="输入名字B" style="flex:1;padding:6px 8px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:12px;outline:none;" list="compare-datalist-b">
+        <datalist id="compare-datalist-b"></datalist>
+        <button id="compare-go-btn" style="padding:6px 10px;border:1px solid #667eea;border-radius:6px;background:#667eea;color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;">对比</button>
+      </div>
+      <div id="compare-content"></div>
+    </div>
+    
+    <div id="tag-filter">
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">点击技能标签筛选相关人才</div>
+      <div class="tag-list" id="tag-list"></div>
+      <div id="tag-result" style="margin-top:8px;font-size:12px;color:#888;"></div>
+    </div>
+    
+    <div id="stats-panel">
+      <div class="stats-section" id="company-stats">
+        <div class="stats-title">&#127970; 公司人数 Top 10</div>
+        <div id="company-stats-content"></div>
+      </div>
+      <div class="stats-section" id="school-stats">
+        <div class="stats-title">&#127891; 学校人数 Top 10</div>
+        <div id="school-stats-content"></div>
+      </div>
+    </div>
+    
+    <div id="timeline-panel">
+      <div style="font-size:13px;color:#667eea;margin-bottom:8px;font-weight:600;">&#128197; 职业经历时间线</div>
+      <div id="timeline-content"></div>
+    </div>
+    
+    <div id="person-detail">
+      <p style="color:#666;text-align:center;margin-top:40px;">&larr; 搜索并选择一个人才开始探索</p>
+    </div>
+    <div id="sidebar-footer"></div>
   </div>
   <div id="chart-container">
     <div id="chart"></div>
     <div id="controls">
-      <button class="ctrl-btn active" onclick="toggleEdge('all')">全部关系</button>
-      <button class="ctrl-btn" onclick="toggleEdge('strong_colleague')">强相关同事</button>
-      <button class="ctrl-btn" onclick="toggleEdge('weak_colleague')">弱相关同事</button>
-      <button class="ctrl-btn" onclick="toggleEdge('classmate')">同学</button>
-      <button class="ctrl-btn" onclick="toggleEdge('shared_company')">同公司</button>
-      <button class="ctrl-btn" onclick="toggleEdge('shared_school')">同学校</button>
+      <button class="ctrl-btn active" data-filter="all">全部关系</button>
+      <button class="ctrl-btn" data-filter="strong_colleague">强相关同事</button>
+      <button class="ctrl-btn" data-filter="weak_colleague">弱相关同事</button>
+      <button class="ctrl-btn" data-filter="classmate">同学</button>
+      <button class="ctrl-btn" data-filter="shared_company">同公司</button>
+      <button class="ctrl-btn" data-filter="shared_school">同学校</button>
     </div>
     <div id="legend">
       <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>强相关同事</div>
@@ -64,6 +194,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       <div class="legend-item"><div class="legend-color" style="background:#6bcf7f"></div>同学</div>
       <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>同公司(隐含)</div>
       <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div>同学校(隐含)</div>
+      <div style="border-top:1px solid #333;margin-top:6px;padding-top:6px;">
+        <div class="legend-item"><span style="color:#ffd700;margin-right:8px;">&#9733;</span>Top连接人才</div>
+      </div>
+      <button id="export-btn">&#128248; 导出PNG</button>
+    </div>
+    <div id="view-modes">
+      <button class="view-btn active" data-view="network">&#128376;&#65039; 网络图</button>
+      <button class="view-btn" data-view="company">&#127970; 公司视图</button>
+      <button class="view-btn" data-view="school">&#127891; 学校视图</button>
+      <button class="view-btn" data-view="timeline">&#128197; 时间线</button>
+    </div>
+    <div id="view-filter" style="display:none;position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,0.95);padding:8px 14px;border-radius:8px;border:1px solid #333;display:none;align-items:center;gap:8px;z-index:10;">
+      <input id="view-filter-input" placeholder="输入公司/学校名筛选" style="padding:6px 10px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:13px;outline:none;width:220px;" list="view-filter-datalist">
+      <datalist id="view-filter-datalist"></datalist>
+      <button id="view-filter-btn" style="padding:6px 14px;border:1px solid #667eea;border-radius:6px;background:#667eea;color:#fff;cursor:pointer;font-size:12px;">筛选</button>
+      <button id="view-filter-reset" style="padding:6px 10px;border:1px solid #444;border-radius:6px;background:transparent;color:#888;cursor:pointer;font-size:12px;">重置</button>
     </div>
   </div>
 </div>
@@ -89,132 +235,999 @@ const EDGE_LABELS = {
 let chart = echarts.init(document.getElementById("chart"), "dark");
 let currentPerson = null;
 let currentFilter = "all";
+let currentView = "network";
+let compareA = null, compareB = null;
+let activeTag = null;
+let pathHighlightNodes = null;
+
+// ====== Pre-computations ======
+const NODE_DEGREES = {};
+ALL_EDGES.forEach(function(e) {
+  NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
+  NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
+});
+const MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
+
+// Top 10 key nodes
+const TOP_KEY_NODES = Object.entries(NODE_DEGREES)
+  .sort(function(a,b) { return b[1] - a[1]; })
+  .slice(0, 10);
+const KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
+
+function nodeSizeByDegree(name) {
+  var deg = NODE_DEGREES[name] || 1;
+  return Math.round(14 + (deg / MAX_DEGREE) * 36);
+}
 
 // Build adjacency
 const adjacency = {};
-ALL_EDGES.forEach(e => {
+ALL_EDGES.forEach(function(e) {
   if (!adjacency[e.source]) adjacency[e.source] = [];
   if (!adjacency[e.target]) adjacency[e.target] = [];
   adjacency[e.source].push(e);
-  adjacency[e.target].push({...e, source: e.target, target: e.source});
+  var rev = {source: e.target, target: e.source, type: e.type};
+  if (e.company) rev.company = e.company;
+  if (e.school) rev.school = e.school;
+  adjacency[e.target].push(rev);
 });
 
+// Build full adjacency map (for BFS)
+const adjMap = {};
+ALL_EDGES.forEach(function(e, idx) {
+  if (!adjMap[e.source]) adjMap[e.source] = [];
+  if (!adjMap[e.target]) adjMap[e.target] = [];
+  adjMap[e.source].push({node: e.target, edgeIdx: idx, edge: e});
+  adjMap[e.target].push({node: e.source, edgeIdx: idx, edge: e});
+});
+
+// Collect all tags
+const allTags = {};
+Object.values(ALL_NODES).forEach(function(n) {
+  if (n.tags) {
+    n.tags.split(",").forEach(function(t) {
+      t = t.trim();
+      if (t) allTags[t] = (allTags[t] || 0) + 1;
+    });
+  }
+});
+
+// Company/school aggregation
+function parseCompanyList(companyStr) {
+  if (!companyStr) return [];
+  return companyStr.split(/[、,，]/).map(function(s) { return s.trim(); }).filter(Boolean);
+}
+
+const companyPeople = {};
+const schoolPeople = {};
+Object.entries(ALL_NODES).forEach(function(entry) {
+  var name = entry[0], info = entry[1];
+  parseCompanyList(info.company).forEach(function(c) {
+    if (!companyPeople[c]) companyPeople[c] = [];
+    companyPeople[c].push(name);
+  });
+  if (info.school) {
+    var s = info.school.trim();
+    if (s) {
+      if (!schoolPeople[s]) schoolPeople[s] = [];
+      schoolPeople[s].push(name);
+    }
+  }
+});
+
+// ====== Helper: escape name for onclick ======
+function escName(name) {
+  return name.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+}
+
+// ====== Sidebar Tab Switching ======
+function switchSidebarTab(tab) {
+  document.querySelectorAll('.sidebar-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelector('.sidebar-tab[data-tab="'+tab+'"]').classList.add('active');
+  
+  document.getElementById('search-box').style.display = tab === 'search' ? '' : 'none';
+  document.getElementById('search-results').style.display = tab === 'search' ? '' : 'none';
+  
+  ['path-finder','compare-panel','tag-filter','stats-panel'].forEach(function(id) {
+    document.getElementById(id).classList.remove('visible');
+  });
+  
+  if (tab === 'path') document.getElementById('path-finder').classList.add('visible');
+  if (tab === 'compare') document.getElementById('compare-panel').classList.add('visible');
+  if (tab === 'tags') { document.getElementById('tag-filter').classList.add('visible'); renderTagList(); }
+  if (tab === 'stats') { document.getElementById('stats-panel').classList.add('visible'); renderStats(); }
+}
+
+// ====== Tag Filter ======
+function renderTagList() {
+  var sorted = Object.entries(allTags).sort(function(a,b) { return b[1] - a[1]; });
+  var html = '';
+  sorted.forEach(function(entry) {
+    var tag = entry[0], count = entry[1];
+    var cls = activeTag === tag ? 'tag-chip active' : 'tag-chip';
+    html += '<div class="' + cls + '" data-tag="' + tag + '">' + tag + ' (' + count + ')</div>';
+  });
+  document.getElementById('tag-list').innerHTML = html;
+}
+
+function toggleTag(tag) {
+  activeTag = activeTag === tag ? null : tag;
+  renderTagList();
+  if (activeTag) {
+    highlightByTag(activeTag);
+  } else {
+    document.getElementById('tag-result').innerHTML = '';
+    if (currentPerson) renderChart(currentPerson);
+    else renderWelcome();
+  }
+}
+
+function highlightByTag(tag) {
+  var matchedNames = [];
+  Object.entries(ALL_NODES).forEach(function(entry) {
+    var name = entry[0], info = entry[1];
+    if (info.tags) {
+      var tags = info.tags.split(",").map(function(t) { return t.trim(); });
+      if (tags.includes(tag)) matchedNames.push(name);
+    }
+  });
+  
+  var matchedSet = new Set(matchedNames);
+  var relevantEdges = ALL_EDGES.filter(function(e) { return matchedSet.has(e.source) || matchedSet.has(e.target); });
+  var relevantNames = new Set();
+  relevantEdges.forEach(function(e) { relevantNames.add(e.source); relevantNames.add(e.target); });
+  matchedNames.forEach(function(n) { relevantNames.add(n); });
+  
+  var chartNodes = Array.from(relevantNames).map(function(n) {
+    var isMatched = matchedSet.has(n);
+    var sz = nodeSizeByDegree(n);
+    return {
+      name: n,
+      symbolSize: isMatched ? Math.max(sz, 30) : Math.max(sz * 0.6, 10),
+      value: NODE_DEGREES[n] || 1,
+      itemStyle: {
+        color: isMatched ? '#667eea' : '#334',
+        borderColor: isMatched ? '#fff' : '#222',
+        borderWidth: isMatched ? 2 : 0,
+        opacity: isMatched ? 1 : 0.3
+      },
+      label: { show: isMatched, fontSize: 11, color: '#fff' }
+    };
+  });
+  
+  var chartEdges = relevantEdges.map(function(e) {
+    return {
+      source: e.source, target: e.target,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
+      lineStyle: {
+        color: EDGE_COLORS[e.type] || '#444',
+        width: (matchedSet.has(e.source) && matchedSet.has(e.target)) ? 2 : 1,
+        curveness: 0.2,
+        opacity: (matchedSet.has(e.source) || matchedSet.has(e.target)) ? 0.6 : 0.15
+      }
+    };
+  });
+  
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    tooltip: buildTooltip(),
+    series: [{
+      type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
+      roam: true, draggable: true,
+      force: { repulsion: 300, gravity: 0.1, edgeLength: [80, 200], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
+      categories: [{ name: tag, itemStyle: { color: '#667eea' } }]
+    }]
+  }, true);
+  
+  var resultHtml = '<b style="color:#667eea">' + tag + '</b> 相关人才: ' + matchedNames.length + '人<br>';
+  matchedNames.slice(0, 20).forEach(function(n) {
+    resultHtml += '<span class="result-item" style="display:inline;padding:2px 6px;cursor:pointer;" data-person="' + escName(n) + '"><span class="name">' + n + '</span></span> ';
+  });
+  if (matchedNames.length > 20) resultHtml += '<span style="color:#666">...还有' + (matchedNames.length - 20) + '人</span>';
+  document.getElementById('tag-result').innerHTML = resultHtml;
+}
+
+// ====== Statistics ======
+function renderStats() {
+  var companyTop = Object.entries(companyPeople).sort(function(a,b) { return b[1].length - a[1].length; }).slice(0, 10);
+  var schoolTop = Object.entries(schoolPeople).sort(function(a,b) { return b[1].length - a[1].length; }).slice(0, 10);
+  
+  var maxC = companyTop.length > 0 ? companyTop[0][1].length : 1;
+  var maxS = schoolTop.length > 0 ? schoolTop[0][1].length : 1;
+  
+  var html = '';
+  companyTop.forEach(function(entry) {
+    var name = entry[0], people = entry[1];
+    html += '<div class="stats-bar">' +
+      '<div class="stats-bar-label" title="' + name + '">' + name + '</div>' +
+      '<div class="stats-bar-fill"><div class="stats-bar-inner" style="width:' + Math.round(people.length / maxC * 100) + '%;background:#4ecdc4;"></div></div>' +
+      '<div class="stats-bar-count">' + people.length + '</div></div>';
+  });
+  document.getElementById('company-stats-content').innerHTML = html;
+  
+  html = '';
+  schoolTop.forEach(function(entry) {
+    var name = entry[0], people = entry[1];
+    html += '<div class="stats-bar">' +
+      '<div class="stats-bar-label" title="' + name + '">' + name + '</div>' +
+      '<div class="stats-bar-fill"><div class="stats-bar-inner" style="width:' + Math.round(people.length / maxS * 100) + '%;background:#a78bfa;"></div></div>' +
+      '<div class="stats-bar-count">' + people.length + '</div></div>';
+  });
+  document.getElementById('school-stats-content').innerHTML = html;
+}
+
+// ====== Path Finding (BFS) ======
+function findPath() {
+  var a = document.getElementById('path-person-a').value.trim();
+  var b = document.getElementById('path-person-b').value.trim();
+  var resultDiv = document.getElementById('path-result');
+  
+  if (!a || !b) { resultDiv.innerHTML = '<span style="color:#ff6b6b;">请输入两个人名</span>'; return; }
+  if (!ALL_NODES[a]) { resultDiv.innerHTML = '<span style="color:#ff6b6b;">未找到: ' + a + '</span>'; return; }
+  if (!ALL_NODES[b]) { resultDiv.innerHTML = '<span style="color:#ff6b6b;">未找到: ' + b + '</span>'; return; }
+  if (a === b) { resultDiv.innerHTML = '<span style="color:#ffd93d;">请输入两个不同的人</span>'; return; }
+  
+  // BFS
+  var queue = [[a, [a], []]];
+  var visited = new Set([a]);
+  var found = null;
+  
+  while (queue.length > 0) {
+    var item = queue.shift();
+    var current = item[0], path = item[1], edges = item[2];
+    if (current === b) { found = {path: path, edges: edges}; break; }
+    
+    var neighbors = adjMap[current] || [];
+    for (var i = 0; i < neighbors.length; i++) {
+      var nb = neighbors[i];
+      if (!visited.has(nb.node)) {
+        visited.add(nb.node);
+        var newPath = path.slice();
+        newPath.push(nb.node);
+        var newEdges = edges.slice();
+        newEdges.push(nb.edge);
+        queue.push([nb.node, newPath, newEdges]);
+      }
+    }
+  }
+  
+  if (!found) {
+    resultDiv.innerHTML = '<span style="color:#ff6b6b;">未找到连接路径</span>';
+    return;
+  }
+  
+  pathHighlightNodes = found.path;
+  
+  var html = '<div style="color:#6bcf7f;margin-bottom:4px;">&#9989; 找到路径! 距离: ' + (found.path.length - 1) + ' 步</div>';
+  html += '<div style="line-height:1.8;">';
+  found.path.forEach(function(name, i) {
+    html += '<span class="timeline-person" data-person="' + escName(name) + '">' + name + '</span>';
+    if (i < found.edges.length) {
+      var e = found.edges[i];
+      var color = EDGE_COLORS[e.type] || '#888';
+      var detail = EDGE_LABELS[e.type] || e.type;
+      if (e.company) detail += '(' + e.company + ')';
+      if (e.school) detail += '(' + e.school + ')';
+      html += ' <span style="color:' + color + ';font-size:10px;">&#8594;' + detail + '&#8594;</span> ';
+    }
+  });
+  html += '</div>';
+  resultDiv.innerHTML = html;
+  
+  highlightPath(found.path, found.edges);
+}
+
+function highlightPath(pathNodes, pathEdges) {
+  var pathSet = new Set(pathNodes);
+  var allNames = new Set();
+  ALL_EDGES.forEach(function(e) {
+    if (pathSet.has(e.source) || pathSet.has(e.target)) {
+      allNames.add(e.source);
+      allNames.add(e.target);
+    }
+  });
+  pathNodes.forEach(function(n) { allNames.add(n); });
+  
+  var edgeKeys = new Set();
+  pathEdges.forEach(function(e) {
+    edgeKeys.add(e.source + '|' + e.target);
+    edgeKeys.add(e.target + '|' + e.source);
+  });
+  
+  var chartNodes = Array.from(allNames).map(function(n) {
+    var isPath = pathSet.has(n);
+    var sz = nodeSizeByDegree(n);
+    return {
+      name: n,
+      symbolSize: isPath ? Math.max(sz, 35) : Math.max(sz * 0.5, 8),
+      value: NODE_DEGREES[n] || 1,
+      itemStyle: {
+        color: isPath ? '#ffd700' : '#334',
+        borderColor: isPath ? '#fff' : '#222',
+        borderWidth: isPath ? 3 : 0,
+        opacity: isPath ? 1 : 0.25
+      },
+      label: { show: isPath, fontSize: isPath ? 13 : 10, color: '#fff', fontWeight: isPath ? 'bold' : 'normal' }
+    };
+  });
+  
+  var chartEdges = ALL_EDGES.filter(function(e) {
+    return allNames.has(e.source) && allNames.has(e.target);
+  }).map(function(e) {
+    var isPathEdge = edgeKeys.has(e.source + '|' + e.target);
+    return {
+      source: e.source, target: e.target,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
+      lineStyle: {
+        color: isPathEdge ? (EDGE_COLORS[e.type] || '#667eea') : '#222',
+        width: isPathEdge ? 4 : 0.5,
+        curveness: 0.2,
+        opacity: isPathEdge ? 1 : 0.1
+      }
+    };
+  });
+  
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    tooltip: buildTooltip(),
+    series: [{
+      type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
+      roam: true, draggable: true,
+      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
+      categories: [{ name: '路径', itemStyle: { color: '#ffd700' } }]
+    }]
+  }, true);
+}
+
+// ====== Compare ======
+function addToCompare(name) {
+  if (!compareA) {
+    compareA = name;
+    document.getElementById('compare-a-name').textContent = name;
+    switchSidebarTab('compare');
+    updateCompare();
+  } else if (!compareB && name !== compareA) {
+    compareB = name;
+    document.getElementById('compare-b-name').textContent = name;
+    updateCompare();
+  } else {
+    compareA = name;
+    compareB = null;
+    document.getElementById('compare-a-name').textContent = name;
+    document.getElementById('compare-b-name').textContent = '(选择第二个人)';
+    updateCompare();
+  }
+}
+
+function clearCompare() {
+  compareA = null; compareB = null;
+  document.getElementById('compare-a-name').textContent = '人物A';
+  document.getElementById('compare-b-name').textContent = '人物B';
+  document.getElementById('compare-input-a').value = '';
+  document.getElementById('compare-input-b').value = '';
+  document.getElementById('compare-content').innerHTML = '<p style="color:#666;font-size:12px;">选择两个人物开始对比</p>';
+}
+
+// Compare input autocomplete
+function setupCompareInputs() {
+  var inputA = document.getElementById('compare-input-a');
+  var inputB = document.getElementById('compare-input-b');
+  var dlA = document.getElementById('compare-datalist-a');
+  var dlB = document.getElementById('compare-datalist-b');
+  
+  function updateDatalist(input, datalist) {
+    var q = input.value.trim().toLowerCase();
+    var matches = allNameList.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 30);
+    datalist.innerHTML = matches.map(function(n) { return '<option value="' + n + '">'; }).join('');
+  }
+  
+  inputA.addEventListener('input', function() { updateDatalist(this, dlA); });
+  inputB.addEventListener('input', function() { updateDatalist(this, dlB); });
+  
+  document.getElementById('compare-go-btn').addEventListener('click', function() {
+    var nameA = inputA.value.trim();
+    var nameB = inputB.value.trim();
+    if (!nameA || !nameB) { alert('请输入两个人的名字'); return; }
+    // Fuzzy match: find exact or first partial match
+    var foundA = allNameList.find(function(n) { return n === nameA || n.toLowerCase() === nameA.toLowerCase(); }) ||
+                 allNameList.find(function(n) { return n.toLowerCase().includes(nameA.toLowerCase()); });
+    var foundB = allNameList.find(function(n) { return n === nameB || n.toLowerCase() === nameB.toLowerCase(); }) ||
+                 allNameList.find(function(n) { return n.toLowerCase().includes(nameB.toLowerCase()); });
+    if (!foundA) { alert('未找到人才: ' + nameA); return; }
+    if (!foundB) { alert('未找到人才: ' + nameB); return; }
+    compareA = foundA;
+    compareB = foundB;
+    document.getElementById('compare-a-name').textContent = foundA;
+    document.getElementById('compare-b-name').textContent = foundB;
+    updateCompare();
+  });
+}
+
+function updateCompare() {
+  var div = document.getElementById('compare-content');
+  if (!compareA) { div.innerHTML = '<p style="color:#666;font-size:12px;">搜索并点击人才添加为A</p>'; return; }
+  if (!compareB) { renderOneSideCompare(); return; }
+  
+  var a = ALL_NODES[compareA], b = ALL_NODES[compareB];
+  if (!a || !b) return;
+  
+  var aCompanies = new Set(parseCompanyList(a.company));
+  var bCompanies = new Set(parseCompanyList(b.company));
+  var commonCompanies = Array.from(aCompanies).filter(function(c) { return bCompanies.has(c); });
+  
+  var aSchools = a.school ? [a.school.trim()] : [];
+  var bSchools = b.school ? [b.school.trim()] : [];
+  var commonSchools = aSchools.filter(function(s) { return bSchools.includes(s); });
+  
+  var aTags = (a.tags || '').split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+  var bTags = (b.tags || '').split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+  var commonTags = aTags.filter(function(t) { return bTags.includes(t); });
+  
+  var aConns = new Set((adjacency[compareA] || []).map(function(e) { return e.target; }));
+  var bConns = new Set((adjacency[compareB] || []).map(function(e) { return e.target; }));
+  var mutualConns = Array.from(aConns).filter(function(c) { return bConns.has(c); });
+  
+  var html = '';
+  
+  html += '<div class="compare-section"><div class="compare-title">&#127970; 公司</div>';
+  html += '<div class="compare-row">';
+  html += '<div class="compare-col person-a"><b>' + compareA + '</b><br>' + (Array.from(aCompanies).join('、') || '无') + '</div>';
+  html += '<div class="compare-col person-b"><b>' + compareB + '</b><br>' + (Array.from(bCompanies).join('、') || '无') + '</div>';
+  html += '</div>';
+  if (commonCompanies.length) {
+    html += '<div class="compare-row"><div class="compare-col common">&#9989; 共同公司: ' + commonCompanies.join('、') + '</div></div>';
+  }
+  html += '</div>';
+  
+  html += '<div class="compare-section"><div class="compare-title">&#127891; 学校</div>';
+  html += '<div class="compare-row">';
+  html += '<div class="compare-col person-a">' + (a.school || '无') + '</div>';
+  html += '<div class="compare-col person-b">' + (b.school || '无') + '</div>';
+  html += '</div>';
+  if (commonSchools.length) {
+    html += '<div class="compare-row"><div class="compare-col common">&#9989; 共同学校: ' + commonSchools.join('、') + '</div></div>';
+  }
+  html += '</div>';
+  
+  html += '<div class="compare-section"><div class="compare-title">&#127991;&#65039; 技能</div>';
+  html += '<div class="compare-row">';
+  html += '<div class="compare-col person-a">' + (aTags.join('、') || '无') + '</div>';
+  html += '<div class="compare-col person-b">' + (bTags.join('、') || '无') + '</div>';
+  html += '</div>';
+  if (commonTags.length) {
+    html += '<div class="compare-row"><div class="compare-col common">&#9989; 共同技能: ' + commonTags.join('、') + '</div></div>';
+  }
+  html += '</div>';
+  
+  html += '<div class="compare-section"><div class="compare-title">&#127760; 网络</div>';
+  html += '<div class="compare-row">';
+  html += '<div class="compare-col person-a">连接数: ' + (NODE_DEGREES[compareA] || 0) + '</div>';
+  html += '<div class="compare-col person-b">连接数: ' + (NODE_DEGREES[compareB] || 0) + '</div>';
+  html += '</div>';
+  if (mutualConns.length) {
+    html += '<div class="compare-row"><div class="compare-col common">&#9989; 共同连接: ' + mutualConns.length + '人 - ' + mutualConns.slice(0,8).join('、') + (mutualConns.length > 8 ? '...' : '') + '</div></div>';
+  }
+  html += '</div>';
+  
+  div.innerHTML = html;
+}
+
+function renderOneSideCompare() {
+  var a = ALL_NODES[compareA];
+  if (!a) return;
+  document.getElementById('compare-content').innerHTML =
+    '<div class="compare-section"><div class="compare-title">&#128100; ' + compareA + '</div>' +
+    '<div style="font-size:12px;color:#aaa;">' +
+    (a.title ? '职位: ' + a.title + '<br>' : '') +
+    (a.company ? '公司: ' + a.company + '<br>' : '') +
+    (a.school ? '学校: ' + a.school + '<br>' : '') +
+    (a.tags ? '技能: ' + a.tags + '<br>' : '') +
+    '连接数: ' + (NODE_DEGREES[compareA] || 0) +
+    '</div></div>' +
+    '<p style="color:#666;font-size:12px;">搜索并点击第二个人物完成对比</p>';
+}
+
+// ====== View Modes ======
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelector('.view-btn[data-view="' + view + '"]').classList.add('active');
+  
+  document.getElementById('timeline-panel').classList.remove('visible');
+  
+  var filterBar = document.getElementById('view-filter');
+  var filterInput = document.getElementById('view-filter-input');
+  var filterDatalist = document.getElementById('view-filter-datalist');
+  
+  if (view === 'network') {
+    filterBar.style.display = 'none';
+    if (currentPerson) renderChart(currentPerson);
+    else renderWelcome();
+  } else if (view === 'company') {
+    filterBar.style.display = 'flex';
+    filterInput.placeholder = '输入公司名筛选';
+    filterInput.value = '';
+    var companies = Object.keys(companyPeople).sort(function(a,b) { return companyPeople[b].length - companyPeople[a].length; });
+    filterDatalist.innerHTML = companies.map(function(c) { return '<option value="' + c + '">'; }).join('');
+    renderCompanyView();
+  } else if (view === 'school') {
+    filterBar.style.display = 'flex';
+    filterInput.placeholder = '输入学校名筛选';
+    filterInput.value = '';
+    var schools = Object.keys(schoolPeople).sort(function(a,b) { return schoolPeople[b].length - schoolPeople[a].length; });
+    filterDatalist.innerHTML = schools.map(function(s) { return '<option value="' + s + '">'; }).join('');
+    renderSchoolView();
+  } else if (view === 'timeline') {
+    filterBar.style.display = 'none';
+    document.getElementById('timeline-panel').classList.add('visible');
+    renderTimelineView();
+  }
+}
+
+function renderCompanyView(filter) {
+  var allCompanies = Object.entries(companyPeople)
+    .filter(function(e) { return e[1].length >= 2; })
+    .sort(function(a,b) { return b[1].length - a[1].length; });
+  
+  var topCompanies;
+  if (filter) {
+    var fq = filter.toLowerCase();
+    topCompanies = allCompanies.filter(function(e) { return e[0].toLowerCase().includes(fq); });
+  } else {
+    topCompanies = allCompanies.slice(0, 30);
+  }
+  
+  var chartNodes = [];
+  var chartEdges = [];
+  var addedNodes = new Set();
+  
+  topCompanies.forEach(function(entry) {
+    var company = entry[0], people = entry[1];
+    chartNodes.push({
+      name: company,
+      symbolSize: Math.max(30, Math.min(people.length * 4, 80)),
+      itemStyle: { color: '#4ecdc4', borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, fontSize: 11, color: '#fff' },
+      category: 0
+    });
+    addedNodes.add(company);
+    people.forEach(function(p) {
+      if (!addedNodes.has(p)) {
+        addedNodes.add(p);
+        chartNodes.push({
+          name: p,
+          symbolSize: 12,
+          itemStyle: { color: '#667eea', borderColor: '#333', borderWidth: 1, opacity: 0.7 },
+          label: { show: false },
+          category: 1
+        });
+      }
+      chartEdges.push({
+        source: company, target: p,
+        lineStyle: { color: '#4ecdc4', width: 1, opacity: 0.3, curveness: 0.1 }
+      });
+    });
+  });
+  
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        if (params.dataType === 'node') {
+          if (companyPeople[params.name]) {
+            return '<b>' + params.name + '</b><br/>人数: ' + companyPeople[params.name].length + '<br/>' + companyPeople[params.name].slice(0,10).join('、') + (companyPeople[params.name].length > 10 ? '...' : '');
+          }
+          var info = ALL_NODES[params.name] || {};
+          return '<b>' + params.name + '</b><br/>' + (info.title || '') + '<br/>' + (info.company || '');
+        }
+        return '';
+      }
+    },
+    series: [{
+      type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
+      roam: true, draggable: true,
+      force: { repulsion: 500, gravity: 0.05, edgeLength: [60, 150], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+      categories: [
+        { name: '公司', itemStyle: { color: '#4ecdc4' } },
+        { name: '人才', itemStyle: { color: '#667eea' } }
+      ]
+    }]
+  }, true);
+}
+
+function renderSchoolView(filter) {
+  var allSchools = Object.entries(schoolPeople)
+    .filter(function(e) { return e[1].length >= 2; })
+    .sort(function(a,b) { return b[1].length - a[1].length; });
+  
+  var topSchools;
+  if (filter) {
+    var fq = filter.toLowerCase();
+    topSchools = allSchools.filter(function(e) { return e[0].toLowerCase().includes(fq); });
+  } else {
+    topSchools = allSchools.slice(0, 30);
+  }
+  
+  var chartNodes = [];
+  var chartEdges = [];
+  var addedNodes = new Set();
+  
+  topSchools.forEach(function(entry) {
+    var school = entry[0], people = entry[1];
+    chartNodes.push({
+      name: school,
+      symbolSize: Math.max(30, Math.min(people.length * 5, 80)),
+      itemStyle: { color: '#a78bfa', borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, fontSize: 11, color: '#fff' },
+      category: 0
+    });
+    addedNodes.add(school);
+    people.forEach(function(p) {
+      if (!addedNodes.has(p)) {
+        addedNodes.add(p);
+        chartNodes.push({
+          name: p,
+          symbolSize: 12,
+          itemStyle: { color: '#667eea', borderColor: '#333', borderWidth: 1, opacity: 0.7 },
+          label: { show: false },
+          category: 1
+        });
+      }
+      chartEdges.push({
+        source: school, target: p,
+        lineStyle: { color: '#a78bfa', width: 1, opacity: 0.3, curveness: 0.1 }
+      });
+    });
+  });
+  
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        if (params.dataType === 'node') {
+          if (schoolPeople[params.name]) {
+            return '<b>' + params.name + '</b><br/>人数: ' + schoolPeople[params.name].length + '<br/>' + schoolPeople[params.name].slice(0,10).join('、') + (schoolPeople[params.name].length > 10 ? '...' : '');
+          }
+          var info = ALL_NODES[params.name] || {};
+          return '<b>' + params.name + '</b><br/>' + (info.title || '') + '<br/>' + (info.school || '');
+        }
+        return '';
+      }
+    },
+    series: [{
+      type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
+      roam: true, draggable: true,
+      force: { repulsion: 500, gravity: 0.05, edgeLength: [60, 150], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+      categories: [
+        { name: '学校', itemStyle: { color: '#a78bfa' } },
+        { name: '人才', itemStyle: { color: '#667eea' } }
+      ]
+    }]
+  }, true);
+}
+
+function renderTimelineView() {
+  var companyTimeline = {};
+  Object.entries(ALL_NODES).forEach(function(entry) {
+    var name = entry[0], info = entry[1];
+    if (!info.company) return;
+    parseCompanyList(info.company).forEach(function(c) {
+      if (!companyTimeline[c]) companyTimeline[c] = [];
+      companyTimeline[c].push(name);
+    });
+  });
+  
+  var sorted = Object.entries(companyTimeline).sort(function(a,b) { return b[1].length - a[1].length; }).slice(0, 30);
+  
+  var html = '';
+  sorted.forEach(function(entry) {
+    var company = entry[0], people = entry[1];
+    html += '<div class="timeline-item">';
+    html += '<div class="timeline-dot" style="background:#4ecdc4;"></div>';
+    html += '<div class="timeline-content">';
+    html += '<div class="timeline-company">' + company + ' (' + people.length + '人)</div>';
+    html += '<div style="color:#aaa;margin-top:2px;">';
+    people.slice(0, 8).forEach(function(p) {
+      html += '<span class="timeline-person" data-person="' + escName(p) + '">' + p + '</span> ';
+    });
+    if (people.length > 8) html += '<span style="color:#666;">等' + people.length + '人</span>';
+    html += '</div></div></div>';
+  });
+  
+  document.getElementById('timeline-content').innerHTML = html;
+  if (currentPerson) renderChart(currentPerson);
+  else renderWelcome();
+}
+
+// ====== Welcome Screen ======
+function renderWelcome() {
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    title: {
+      text: '人才社交网络图',
+      subtext: '← 在左侧搜索框输入人才名字开始探索\n\n或点击底部「公司视图」「学校视图」浏览',
+      left: 'center', top: 'center',
+      textStyle: { color: '#667eea', fontSize: 28, fontWeight: 700 },
+      subtextStyle: { color: '#888', fontSize: 14, lineHeight: 24 }
+    }
+  }, true);
+}
+
+// ====== Full Network View ======
+function renderFullNetwork() {
+  var topNodes = Object.entries(NODE_DEGREES)
+    .sort(function(a,b) { return b[1] - a[1]; })
+    .slice(0, 80)
+    .map(function(e) { return e[0]; });
+  
+  var topSet = new Set(topNodes);
+  var relevantEdges = ALL_EDGES.filter(function(e) { return topSet.has(e.source) && topSet.has(e.target); });
+  
+  var chartNodes = topNodes.map(function(n) {
+    var isKey = KEY_NODE_SET.has(n);
+    var sz = nodeSizeByDegree(n);
+    return {
+      name: n,
+      symbolSize: sz,
+      value: NODE_DEGREES[n] || 1,
+      itemStyle: {
+        color: isKey ? '#ffd700' : '#667eea',
+        borderColor: isKey ? '#fff' : '#333',
+        borderWidth: isKey ? 3 : 1,
+        shadowBlur: isKey ? 15 : 5,
+        shadowColor: isKey ? 'rgba(255,215,0,0.4)' : 'rgba(0,0,0,0.3)'
+      },
+      label: {
+        show: (NODE_DEGREES[n] || 0) >= 15,
+        fontSize: (NODE_DEGREES[n] || 0) > 20 ? 14 : 11,
+        fontWeight: isKey ? 'bold' : 'normal',
+        color: isKey ? '#000' : '#ddd'
+      },
+      category: isKey ? 1 : 0
+    };
+  });
+  
+  var chartEdges = relevantEdges.map(function(e) {
+    return {
+      source: e.source, target: e.target,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
+      lineStyle: {
+        color: EDGE_COLORS[e.type] || '#333',
+        width: e.type === 'strong_colleague' ? 1.5 : 0.8,
+        curveness: 0.15,
+        opacity: 0.25
+      }
+    };
+  });
+  
+  chart.setOption({
+    backgroundColor: '#0f0f23',
+    tooltip: buildTooltip(),
+    series: [{
+      type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
+      roam: true, draggable: true,
+      force: { repulsion: 800, gravity: 0.05, edgeLength: [120, 350], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 4 }, label: { show: true, fontSize: 13, color: '#fff' } },
+      categories: [
+        { name: '人才', itemStyle: { color: '#667eea' } },
+        { name: '核心人才', itemStyle: { color: '#ffd700' } }
+      ]
+    }]
+  }, true);
+}
+
+// ====== Tooltip Builder ======
+function buildTooltip() {
+  return {
+    trigger: 'item',
+    formatter: function(params) {
+      if (params.dataType === 'node') {
+        var info = ALL_NODES[params.name] || {};
+        var tip = '<b>' + params.name + '</b>';
+        if (KEY_NODE_SET.has(params.name)) {
+          var rank = TOP_KEY_NODES.findIndex(function(n) { return n[0] === params.name; }) + 1;
+          tip += ' <span style="color:#ffd700;">&#9733; Top' + rank + '</span>';
+        }
+        if (info.title) tip += '<br/>' + info.title;
+        if (info.company) tip += '<br/>公司: ' + info.company;
+        if (info.school) tip += '<br/>学校: ' + info.school;
+        if (info.tags) tip += '<br/>技能: ' + info.tags;
+        tip += '<br/>连接数: ' + (NODE_DEGREES[params.name] || 0);
+        return tip;
+      }
+      if (params.dataType === 'edge') {
+        var d = params.data;
+        var tip = '';
+        if (d._type) {
+          tip += '<b>' + (EDGE_LABELS[d._type] || d._type) + '</b>';
+          if (d._company) tip += '<br/>公司: ' + d._company;
+          if (d._school) tip += '<br/>学校: ' + d._school;
+          tip += '<br/>' + d.source + ' ↔ ' + d.target;
+        } else {
+          tip = d.source + ' ↔ ' + d.target;
+        }
+        return tip;
+      }
+      return '';
+    }
+  };
+}
+
+// ====== Main: showPerson & renderChart ======
 function showPerson(name) {
   currentPerson = name;
-  const info = ALL_NODES[name];
+  var info = ALL_NODES[name];
   if (!info) return;
   
+  // Switch to search tab
+  switchSidebarTab('search');
+  
   // Update detail panel
-  const detail = document.getElementById("person-detail");
-  let html = `<h2>${name}</h2>`;
-  if (info.title) html += `<div class="detail-row"><span class="detail-label">职位</span><span class="detail-value">${info.title}</span></div>`;
-  if (info.company) html += `<div class="detail-row"><span class="detail-label">公司</span><span class="detail-value">${info.company}</span></div>`;
-  if (info.school) html += `<div class="detail-row"><span class="detail-label">学校</span><span class="detail-value">${info.school}</span></div>`;
-  if (info.edu) html += `<div class="detail-row"><span class="detail-label">学历</span><span class="detail-value">${info.edu}</span></div>`;
-  if (info.tags) html += `<div class="detail-row"><span class="detail-label">技能</span><span class="detail-value">${info.tags}</span></div>`;
+  var detail = document.getElementById('person-detail');
+  var html = '<h2>' + name;
+  if (KEY_NODE_SET.has(name)) {
+    var rank = TOP_KEY_NODES.findIndex(function(n) { return n[0] === name; }) + 1;
+    html += '<span class="star-badge">&#9733; Top' + rank + '</span>';
+  }
+  html += '</h2>';
+  if (info.title) html += '<div class="detail-row"><span class="detail-label">职位</span><span class="detail-value">' + info.title + '</span></div>';
+  if (info.company) html += '<div class="detail-row"><span class="detail-label">公司</span><span class="detail-value">' + info.company + '</span></div>';
+  if (info.school) html += '<div class="detail-row"><span class="detail-label">学校</span><span class="detail-value">' + info.school + '</span></div>';
+  if (info.edu) html += '<div class="detail-row"><span class="detail-label">学历</span><span class="detail-value">' + info.edu + '</span></div>';
+  if (info.tags) html += '<div class="detail-row"><span class="detail-label">技能</span><span class="detail-value">' + info.tags + '</span></div>';
+  html += '<div class="detail-row"><span class="detail-label">连接数</span><span class="detail-value" style="color:#667eea;font-weight:700;">' + (NODE_DEGREES[name] || 0) + '</span></div>';
+  
+  // Action buttons
+  html += '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">';
+  html += '<button class="action-compare-btn" data-person="' + escName(name) + '" style="padding:4px 10px;border:1px solid #4ecdc4;border-radius:4px;background:transparent;color:#4ecdc4;cursor:pointer;font-size:11px;">&#9878;&#65039; 加入对比</button>';
+  html += '<button class="action-path-a-btn" data-person="' + escName(name) + '" style="padding:4px 10px;border:1px solid #ffd93d;border-radius:4px;background:transparent;color:#ffd93d;cursor:pointer;font-size:11px;">&#128279; 路径A</button>';
+  html += '<button class="action-path-b-btn" data-person="' + escName(name) + '" style="padding:4px 10px;border:1px solid #ffd93d;border-radius:4px;background:transparent;color:#ffd93d;cursor:pointer;font-size:11px;">&#128279; 路径B</button>';
+  html += '</div>';
   
   // Count connections by type
-  const conns = adjacency[name] || [];
-  const typeCounts = {};
-  conns.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
+  var conns = adjacency[name] || [];
+  var typeCounts = {};
+  conns.forEach(function(e) { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
   
-  html += `<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">`;
-  html += `<div style="font-size:13px;color:#888;margin-bottom:8px;">关系网络</div>`;
-  Object.entries(typeCounts).forEach(([type, count]) => {
-    html += `<div class="detail-row"><span class="detail-label" style="color:${EDGE_COLORS[type]}">${EDGE_LABELS[type]}</span><span class="detail-value">${count}人</span></div>`;
+  html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
+  html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关系网络</div>';
+  Object.entries(typeCounts).forEach(function(entry) {
+    var type = entry[0], count = entry[1];
+    html += '<div class="detail-row"><span class="detail-label" style="color:' + EDGE_COLORS[type] + '">' + EDGE_LABELS[type] + '</span><span class="detail-value">' + count + '人</span></div>';
   });
-  html += `</div>`;
+  html += '</div>';
   
   // List connected people
-  const connected = [...new Set(conns.map(e => e.target))];
-  html += `<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">`;
-  html += `<div style="font-size:13px;color:#888;margin-bottom:8px;">关联人才 (${connected.length}人)</div>`;
-  connected.slice(0, 30).forEach(cn => {
-    const ci = ALL_NODES[cn];
-    const connEdge = conns.find(e => e.target === cn);
-    const color = connEdge ? EDGE_COLORS[connEdge.type] : "#888";
-    html += `<div class="result-item" onclick="showPerson('${cn.replace(/'/g, "\'")}')" style="padding:6px 0;border:none;">`;
-    html += `<span class="name" style="color:${color}">${cn}</span>`;
+  var connectedSet = new Set();
+  conns.forEach(function(e) { connectedSet.add(e.target); });
+  var connected = Array.from(connectedSet);
+  
+  html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
+  html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关联人才 (' + connected.length + '人)</div>';
+  connected.slice(0, 30).forEach(function(cn) {
+    var ci = ALL_NODES[cn];
+    var connEdge = conns.find(function(e) { return e.target === cn; });
+    var color = connEdge ? EDGE_COLORS[connEdge.type] : '#888';
+    var isKey = KEY_NODE_SET.has(cn);
+    html += '<div class="result-item conn-person-item" data-person="' + escName(cn) + '" style="padding:6px 0;border:none;">';
+    html += '<span class="name" style="color:' + color + '">' + cn + (isKey ? ' &#9733;' : '') + '</span>';
     if (ci) {
-      html += `<span class="info">${ci.company || ""} ${ci.title || ""}</span>`;
+      html += '<span class="info">' + (ci.company || '') + ' ' + (ci.title || '') + '</span>';
     }
-    html += `</div>`;
+    html += '</div>';
   });
-  if (connected.length > 30) html += `<div style="color:#666;font-size:12px;padding:4px 0;">...还有 ${connected.length - 30} 人</div>`;
-  html += `</div>`;
+  if (connected.length > 30) html += '<div style="color:#666;font-size:12px;padding:4px 0;">...还有 ' + (connected.length - 30) + ' 人</div>';
+  html += '</div>';
   
   detail.innerHTML = html;
   
-  // Update chart
+  // Switch to network view and render
+  if (currentView !== 'network') {
+    currentView = 'network';
+    document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelector('.view-btn[data-view="network"]').classList.add('active');
+    document.getElementById('timeline-panel').classList.remove('visible');
+  }
   renderChart(name);
 }
 
+function setPathPerson(slot, name) {
+  document.getElementById('path-person-' + slot).value = name;
+  switchSidebarTab('path');
+}
+
 function renderChart(centerName) {
-  const conns = adjacency[centerName] || [];
-  const filtered = currentFilter === "all" ? conns : conns.filter(e => e.type === currentFilter);
+  var conns = adjacency[centerName] || [];
+  var filtered = currentFilter === 'all' ? conns : conns.filter(function(e) { return e.type === currentFilter; });
   
-  const connectedNames = [...new Set(filtered.map(e => e.target))];
-  const allNames = [centerName, ...connectedNames];
+  var connectedNames = [];
+  var seenNames = new Set();
+  filtered.forEach(function(e) {
+    if (!seenNames.has(e.target)) {
+      seenNames.add(e.target);
+      connectedNames.push(e.target);
+    }
+  });
+  var allNames = [centerName].concat(connectedNames);
   
-  // Build node list
-  const chartNodes = allNames.map(n => {
-    const info = ALL_NODES[n] || {};
-    const isCenter = n === centerName;
+  var chartNodes = allNames.map(function(n) {
+    var info = ALL_NODES[n] || {};
+    var isCenter = n === centerName;
+    var isKey = KEY_NODE_SET.has(n);
+    var sz = isCenter ? Math.max(nodeSizeByDegree(n), 45) : nodeSizeByDegree(n);
+    
+    var nodeColor = '#4ecdc4';
+    if (isCenter) nodeColor = '#667eea';
+    else if (isKey) nodeColor = '#ffd700';
+    else {
+      var tc = typeCountForPerson(n);
+      var keys = Object.keys(tc);
+      if (keys.length > 0) {
+        keys.sort(function(a,b) { return tc[b] - tc[a]; });
+        nodeColor = EDGE_COLORS[keys[0]] || '#4ecdc4';
+      }
+    }
+    
     return {
       name: n,
-      symbolSize: isCenter ? 50 : 28,
-      value: isCenter ? 100 : (adjacency[n] ? adjacency[n].length : 1),
+      symbolSize: sz,
+      value: NODE_DEGREES[n] || 1,
       itemStyle: {
-        color: isCenter ? "#667eea" : (EDGE_COLORS[Object.keys(typeCountForPerson(n))[0]] || "#4ecdc4"),
-        borderColor: isCenter ? "#fff" : "#333",
-        borderWidth: isCenter ? 3 : 1,
-        shadowBlur: isCenter ? 20 : 5,
-        shadowColor: isCenter ? "rgba(102,126,234,0.5)" : "rgba(0,0,0,0.3)"
+        color: nodeColor,
+        borderColor: isCenter ? '#fff' : (isKey ? '#ffd700' : '#333'),
+        borderWidth: isCenter ? 3 : (isKey ? 2 : 1),
+        shadowBlur: isCenter ? 20 : (isKey ? 12 : 5),
+        shadowColor: isCenter ? 'rgba(102,126,234,0.5)' : (isKey ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)')
       },
       label: {
-        show: true,
-        fontSize: isCenter ? 14 : 11,
-        fontWeight: isCenter ? "bold" : "normal",
-        color: isCenter ? "#fff" : "#ccc"
+        show: isCenter || isKey || (NODE_DEGREES[n] || 0) >= 10,
+        fontSize: isCenter ? 14 : (isKey ? 12 : 11),
+        fontWeight: isCenter ? 'bold' : (isKey ? 'bold' : 'normal'),
+        color: isCenter ? '#fff' : (isKey ? '#000' : '#ddd')
       },
       category: isCenter ? 0 : getCategory(n)
     };
   });
   
-  // Build edge list
-  const chartEdges = filtered.map(e => ({
-    source: centerName,
-    target: e.target,
-    lineStyle: {
-      color: EDGE_COLORS[e.type] || "#666",
-      width: e.type === "strong_colleague" ? 3 : (e.type === "weak_colleague" ? 2 : 1.5),
-      curveness: 0.2,
-      opacity: 0.7
-    },
-    label: {
-      show: false
-    }
-  }));
+  var chartEdges = filtered.map(function(e) {
+    return {
+      source: centerName, target: e.target,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
+      lineStyle: {
+        color: EDGE_COLORS[e.type] || '#666',
+        width: e.type === 'strong_colleague' ? 3 : (e.type === 'weak_colleague' ? 2 : 1.5),
+        curveness: 0.2,
+        opacity: 0.7
+      },
+      label: { show: false }
+    };
+  });
   
-  // Also add edges between connected nodes if they exist
-  const connectedSet = new Set(connectedNames);
-  connectedNames.forEach(cn => {
-    const cnConns = adjacency[cn] || [];
-    cnConns.forEach(e => {
+  // Inter-node edges
+  var connectedSet = new Set(connectedNames);
+  var addedEdgeKeys = new Set();
+  connectedNames.forEach(function(cn) {
+    var cnConns = adjacency[cn] || [];
+    cnConns.forEach(function(e) {
       if (connectedSet.has(e.target) && e.target !== centerName) {
-        const src = e.source === cn ? cn : e.target;
-        const tgt = e.source === cn ? e.target : cn;
-        const edgeKey = src + "->" + tgt;
-        if (!chartEdges.find(ce => (ce.source === src && ce.target === tgt) || (ce.source === tgt && ce.target === src))) {
+        var pair = [cn, e.target].sort();
+        var edgeKey = pair[0] + '|' + pair[1];
+        if (!addedEdgeKeys.has(edgeKey)) {
+          addedEdgeKeys.add(edgeKey);
           chartEdges.push({
-            source: src,
-            target: tgt,
+            source: cn, target: e.target,
+            _type: e.type, _company: e.company || null, _school: e.school || null,
             lineStyle: {
-              color: EDGE_COLORS[e.type] || "#444",
+              color: EDGE_COLORS[e.type] || '#444',
               width: 1,
               curveness: 0.3,
               opacity: 0.3,
-              type: "dashed"
+              type: 'dashed'
             }
           });
         }
@@ -222,110 +1235,237 @@ function renderChart(centerName) {
     });
   });
   
-  const option = {
-    backgroundColor: "#0f0f23",
-    tooltip: {
-      trigger: "item",
-      formatter: function(params) {
-        if (params.dataType === "node") {
-          const info = ALL_NODES[params.name] || {};
-          let tip = `<b>${params.name}</b>`;
-          if (info.title) tip += `<br/>${info.title}`;
-          if (info.company) tip += `<br/>公司: ${info.company}`;
-          if (info.school) tip += `<br/>学校: ${info.school}`;
-          return tip;
-        }
-        return "";
-      }
-    },
+  var option = {
+    backgroundColor: '#0f0f23',
+    tooltip: buildTooltip(),
     series: [{
-      type: "graph",
-      layout: "force",
+      type: 'graph',
+      layout: 'force',
       data: chartNodes,
       links: chartEdges,
       roam: true,
       draggable: true,
-      force: {
-        repulsion: 400,
-        gravity: 0.1,
-        edgeLength: [100, 250],
-        friction: 0.6
-      },
-      emphasis: {
-        focus: "adjacency",
-        lineStyle: { width: 4 }
-      },
+      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [
-        { name: "中心", itemStyle: { color: "#667eea" } },
-        { name: "强相关", itemStyle: { color: "#ff6b6b" } },
-        { name: "弱相关", itemStyle: { color: "#ffd93d" } },
-        { name: "同学", itemStyle: { color: "#6bcf7f" } },
-        { name: "同公司", itemStyle: { color: "#4ecdc4" } },
-        { name: "同学校", itemStyle: { color: "#a78bfa" } }
+        { name: '中心', itemStyle: { color: '#667eea' } },
+        { name: '强相关', itemStyle: { color: '#ff6b6b' } },
+        { name: '弱相关', itemStyle: { color: '#ffd93d' } },
+        { name: '同学', itemStyle: { color: '#6bcf7f' } },
+        { name: '同公司', itemStyle: { color: '#4ecdc4' } },
+        { name: '同学校', itemStyle: { color: '#a78bfa' } }
       ]
     }]
   };
   
   chart.setOption(option, true);
   
-  // Update stats
-  document.getElementById("stats").innerHTML = 
-    `当前: ${centerName} | 显示 ${connectedNames.length} 个关联 / 总计 ${allNames.length} 节点 / ${chartEdges.length} 条边`;
+  document.getElementById('sidebar-footer').innerHTML =
+    '当前: ' + centerName + ' | 显示 ' + connectedNames.length + ' 个关联 / 总计 ' + allNames.length + ' 节点 / ' + chartEdges.length + ' 条边';
 }
 
 function getCategory(name) {
-  const conns = adjacency[currentPerson] || [];
-  const edge = conns.find(e => e.target === name);
+  var conns = adjacency[currentPerson] || [];
+  var edge = conns.find(function(e) { return e.target === name; });
   if (!edge) return 0;
-  const typeMap = { "strong_colleague": 1, "weak_colleague": 2, "classmate": 3, "shared_company": 4, "shared_school": 5 };
+  var typeMap = { 'strong_colleague': 1, 'weak_colleague': 2, 'classmate': 3, 'shared_company': 4, 'shared_school': 5 };
   return typeMap[edge.type] || 0;
 }
 
 function typeCountForPerson(name) {
-  const conns = adjacency[name] || [];
-  const counts = {};
-  conns.forEach(e => { counts[e.type] = (counts[e.type] || 0) + 1; });
+  var conns = adjacency[name] || [];
+  var counts = {};
+  conns.forEach(function(e) { counts[e.type] = (counts[e.type] || 0) + 1; });
   return counts;
 }
 
 function toggleEdge(type) {
   currentFilter = type;
-  document.querySelectorAll(".ctrl-btn").forEach(btn => btn.classList.remove("active"));
-  event.target.classList.add("active");
+  document.querySelectorAll('.ctrl-btn').forEach(function(btn) { btn.classList.remove('active'); });
+  document.querySelector('.ctrl-btn[data-filter="' + type + '"]').classList.add('active');
   if (currentPerson) renderChart(currentPerson);
 }
 
-// Search functionality
-const searchInput = document.getElementById("search-input");
-const searchResults = document.getElementById("search-results");
-const allNames = Object.keys(ALL_NODES).sort();
+// ====== Export PNG ======
+function exportPNG() {
+  var url = chart.getDataURL({
+    type: 'png',
+    pixelRatio: 2,
+    backgroundColor: '#0f0f23'
+  });
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'talent_network_' + (currentPerson || 'overview') + '_' + Date.now() + '.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
 
-searchInput.addEventListener("input", function() {
-  const q = this.value.trim().toLowerCase();
-  if (!q) { searchResults.innerHTML = ""; return; }
+// ====== Event Delegation ======
+document.addEventListener('click', function(e) {
+  var target = e.target;
   
-  const matches = allNames.filter(n => n.toLowerCase().includes(q)).slice(0, 20);
-  searchResults.innerHTML = matches.map(n => {
-    const info = ALL_NODES[n];
-    return `<div class="result-item" onclick="showPerson('${n.replace(/'/g, "\\'")}')">
-      <div class="name">${n}</div>
-      <div class="info">${info.company || ""} | ${info.title || ""}</div>
-    </div>`;
-  }).join("");
+  // Sidebar tabs
+  if (target.classList.contains('sidebar-tab')) {
+    switchSidebarTab(target.getAttribute('data-tab'));
+    return;
+  }
+  
+  // Control buttons
+  if (target.classList.contains('ctrl-btn')) {
+    var filter = target.getAttribute('data-filter');
+    if (filter) toggleEdge(filter);
+    return;
+  }
+  
+  // View buttons
+  if (target.classList.contains('view-btn')) {
+    var view = target.getAttribute('data-view');
+    if (view) switchView(view);
+    return;
+  }
+  
+  // Search result items
+  if (target.closest('.result-item') && target.closest('#search-results')) {
+    var item = target.closest('.result-item');
+    var personName = item.getAttribute('data-person') || item.textContent.trim().split('\n')[0].trim();
+    // Find from ALL_NODES
+    if (ALL_NODES[personName]) showPerson(personName);
+    return;
+  }
+  
+  // Person with data-person attribute
+  if (target.getAttribute('data-person') || target.closest('[data-person]')) {
+    var el = target.getAttribute('data-person') ? target : target.closest('[data-person]');
+    var pname = el.getAttribute('data-person');
+    // Check context
+    if (el.classList.contains('conn-person-item') || el.classList.contains('timeline-person') || el.closest('#tag-result') || el.closest('#timeline-content')) {
+      if (ALL_NODES[pname]) showPerson(pname);
+      return;
+    }
+  }
+  
+  // Compare buttons
+  if (target.classList.contains('action-compare-btn')) {
+    addToCompare(target.getAttribute('data-person'));
+    return;
+  }
+  if (target.classList.contains('action-path-a-btn')) {
+    setPathPerson('a', target.getAttribute('data-person'));
+    return;
+  }
+  if (target.classList.contains('action-path-b-btn')) {
+    setPathPerson('b', target.getAttribute('data-person'));
+    return;
+  }
+  
+  // Find path button
+  if (target.id === 'find-path-btn' || target.closest('#find-path-btn')) {
+    findPath();
+    return;
+  }
+  
+  // Clear compare
+  if (target.id === 'clear-compare-btn' || target.closest('#clear-compare-btn')) {
+    clearCompare();
+    return;
+  }
+  
+  // Export button
+  if (target.id === 'export-btn' || target.closest('#export-btn')) {
+    exportPNG();
+    return;
+  }
+  
+  // View filter buttons
+  if (target.id === 'view-filter-btn' || target.closest('#view-filter-btn')) {
+    var fv = document.getElementById('view-filter-input').value.trim();
+    if (!fv) return;
+    if (currentView === 'company') renderCompanyView(fv);
+    else if (currentView === 'school') renderSchoolView(fv);
+    return;
+  }
+  if (target.id === 'view-filter-reset' || target.closest('#view-filter-reset')) {
+    document.getElementById('view-filter-input').value = '';
+    if (currentView === 'company') renderCompanyView();
+    else if (currentView === 'school') renderSchoolView();
+    return;
+  }
+  
+  // Tag chips
+  if (target.classList.contains('tag-chip')) {
+    var tag = target.getAttribute('data-tag') || target.textContent.replace(/\s*\(\d+\)$/, '').trim();
+    toggleTag(tag);
+    return;
+  }
+  
+  // Path result person click
+  if (target.closest('#path-result') && (target.getAttribute('data-person') || target.closest('[data-person]'))) {
+    var pathPerson = target.getAttribute('data-person') || target.closest('[data-person]').getAttribute('data-person');
+    if (ALL_NODES[pathPerson]) showPerson(pathPerson);
+    return;
+  }
 });
 
-// Click on chart node
-chart.on("click", function(params) {
-  if (params.dataType === "node" && params.name) {
+// ====== Search ======
+var searchInput = document.getElementById('search-input');
+var searchResults = document.getElementById('search-results');
+var allNameList = Object.keys(ALL_NODES).sort();
+
+searchInput.addEventListener('input', function() {
+  var q = this.value.trim().toLowerCase();
+  if (!q) { searchResults.innerHTML = ''; return; }
+  
+  var matches = allNameList.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 20);
+  var html = '';
+  matches.forEach(function(n) {
+    var info = ALL_NODES[n];
+    var isKey = KEY_NODE_SET.has(n);
+    html += '<div class="result-item" data-person="' + escName(n) + '">';
+    html += '<div class="name">' + n + (isKey ? ' <span style="color:#ffd700;">&#9733;</span>' : '') + '</div>';
+    html += '<div class="info">' + (info.company || '') + ' | ' + (info.title || '') + '</div>';
+    html += '</div>';
+  });
+  searchResults.innerHTML = html;
+});
+
+// Fix search result click handling
+searchResults.addEventListener('click', function(e) {
+  var item = e.target.closest('.result-item');
+  if (item) {
+    var pname = item.getAttribute('data-person');
+    if (ALL_NODES[pname]) showPerson(pname);
+  }
+});
+
+// Enter key for compare inputs
+document.getElementById('compare-input-a').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('compare-go-btn').click(); });
+document.getElementById('compare-input-b').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('compare-go-btn').click(); });
+
+// Enter key for view filter input
+document.getElementById('view-filter-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var fv = this.value.trim();
+    if (!fv) return;
+    if (currentView === 'company') renderCompanyView(fv);
+    else if (currentView === 'school') renderSchoolView(fv);
+  }
+});
+
+// ====== Click on chart node ======
+chart.on('click', function(params) {
+  if (params.dataType === 'node' && params.name && ALL_NODES[params.name]) {
     showPerson(params.name);
   }
 });
 
-// Responsive
-window.addEventListener("resize", () => chart.resize());
+// ====== Responsive ======
+window.addEventListener('resize', function() { chart.resize(); });
 
-// Show stats
-document.getElementById("stats").innerHTML = `共 ${Object.keys(ALL_NODES).length} 人 / ${ALL_EDGES.length} 条关系边`;
+// ====== Initial render ======
+document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注';
+setupCompareInputs();
+renderWelcome();
 </script>
 </body>
 </html>
