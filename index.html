@@ -443,25 +443,25 @@ function highlightByTag(tags) {
   var chartNodes = Array.from(relevantNames).map(function(n) {
     var isMatched = matchedSet.has(n);
     var sz = nodeSizeByDegree(n);
-    var actualSz = isMatched ? Math.max(sz, 30) : Math.max(sz * 0.6, 10);
+    var actualSz = isMatched ? Math.max(sz, 30) : Math.max(sz * 0.5, 18);
     return {
       name: n,
       symbolSize: actualSz,
       value: NODE_DEGREES[n] || 1,
       itemStyle: {
-        color: isMatched ? '#667eea' : '#334',
-        borderColor: isMatched ? '#fff' : '#222',
-        borderWidth: isMatched ? 2 : 0,
-        opacity: isMatched ? 1 : 0.3
+        color: isMatched ? '#667eea' : '#2a2a3a',
+        borderColor: isMatched ? '#fff' : '#444',
+        borderWidth: isMatched ? 2 : 1,
+        opacity: isMatched ? 1 : 0.5
       },
       label: {
         show: true,
-        fontSize: isMatched ? 12 : 10,
+        fontSize: isMatched ? 13 : 11,
         fontWeight: isMatched ? 'bold' : 'normal',
-        color: isMatched ? '#fff' : '#e0e0e0',
-        textBorderColor: isMatched ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.6)',
-        textBorderWidth: 1,
-        position: actualSz >= 20 ? 'inside' : 'right'
+        color: isMatched ? '#fff' : '#ccc',
+        textBorderColor: 'rgba(0,0,0,0.7)',
+        textBorderWidth: 2,
+        position: isMatched && actualSz >= 30 ? 'inside' : 'top'
       }
     };
   });
