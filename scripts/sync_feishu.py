@@ -142,6 +142,8 @@ def build_graph_data():
     company_groups = {}
     school_groups = {}
     edge_set = set()
+    # 记录已有关系边的人员对（用于同公司去重）
+    relation_pairs = set()
 
     def add_node(fields, source):
         name = safe_str(fields.get('姓名', '')).strip()
@@ -189,9 +191,11 @@ def build_graph_data():
             for target in targets:
                 target = target.strip()
                 if target and target != name and target in nodes:
-                    edge_key = tuple(sorted([name, target])) + (rf['edge_type'],)
+                    pair = tuple(sorted([name, target]))
+                    edge_key = pair + (rf['edge_type'],)
                     if edge_key not in edge_set:
                         edge_set.add(edge_key)
+                        relation_pairs.add(pair)
                         edges.append({
                             'source': name,
                             'target': target,
@@ -202,8 +206,9 @@ def build_graph_data():
 
     # 同公司/同学校边
     shared_count = 0
-    def add_shared_edges(group_map, edge_type):
+    def add_shared_edges(group_map, edge_type, skip_pairs=None):
         nonlocal shared_count
+        skip_pairs = skip_pairs or set()
         for key, names in group_map.items():
             if len(names) < 2:
                 continue
@@ -211,6 +216,9 @@ def build_graph_data():
             for i in range(len(sampled)):
                 for j in range(i + 1, len(sampled)):
                     pair = tuple(sorted([sampled[i], sampled[j]]))
+                    # 如果已有关系边则跳过（避免重复）
+                    if pair in skip_pairs:
+                        continue
                     edge_key = pair + (edge_type,)
                     if edge_key not in edge_set:
                         edge_set.add(edge_key)
@@ -224,7 +232,7 @@ def build_graph_data():
                         edges.append(edge)
                         shared_count += 1
 
-    add_shared_edges(company_groups, 'shared_company')
+    add_shared_edges(company_groups, 'shared_company', relation_pairs)
     add_shared_edges(school_groups, 'shared_school')
     print(f'  -> shared edges: {shared_count}')
 
