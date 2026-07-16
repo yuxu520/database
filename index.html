@@ -242,7 +242,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 let ALL_NODES = {};
 let ALL_EDGES = [];
 
-
 const EDGE_COLORS = {
   "strong_colleague": "#ff6b6b",
   "weak_colleague": "#ffd93d",
@@ -267,18 +266,18 @@ let activeTags = [];
 let pathHighlightNodes = null;
 
 // ====== Pre-computations ======
-const NODE_DEGREES = {};
+let NODE_DEGREES = {};
 ALL_EDGES.forEach(function(e) {
   NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
   NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
 });
-const MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
+let MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
 
 // Top 10 key nodes
-const TOP_KEY_NODES = Object.entries(NODE_DEGREES)
+let TOP_KEY_NODES = Object.entries(NODE_DEGREES)
   .sort(function(a,b) { return b[1] - a[1]; })
   .slice(0, 10);
-const KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
+let KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
 
 function nodeSizeByDegree(name) {
   var deg = NODE_DEGREES[name] || 1;
@@ -298,7 +297,7 @@ ALL_EDGES.forEach(function(e) {
 });
 
 // Build full adjacency map (for BFS)
-const adjMap = {};
+let adjMap = {};
 ALL_EDGES.forEach(function(e, idx) {
   if (!adjMap[e.source]) adjMap[e.source] = [];
   if (!adjMap[e.target]) adjMap[e.target] = [];
@@ -307,7 +306,7 @@ ALL_EDGES.forEach(function(e, idx) {
 });
 
 // Collect all tags
-const allTags = {};
+let allTags = {};
 Object.values(ALL_NODES).forEach(function(n) {
   if (n.tags) {
     n.tags.split(",").forEach(function(t) {
@@ -323,8 +322,8 @@ function parseCompanyList(companyStr) {
   return companyStr.split(/[、,，]/).map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
-const companyPeople = {};
-const schoolPeople = {};
+let companyPeople = {};
+let schoolPeople = {};
 Object.entries(ALL_NODES).forEach(function(entry) {
   var name = entry[0], info = entry[1];
   parseCompanyList(info.company).forEach(function(c) {
@@ -1662,31 +1661,31 @@ chart.on('click', function(params) {
 window.addEventListener('resize', function() { chart.resize(); });
 
 // ====== Initial render ======
-document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注';
-setupCompareInputs();
-renderWelcome();
-
-
-// ====== Async data loading ======
+// ====== Load data dynamically ======
 fetch('graph_data.json?t=' + Date.now())
   .then(function(r) { return r.json(); })
   .then(function(data) {
     ALL_NODES = data.nodes || {};
-    ALL_EDGES = (data.edges || []).map(function(e) {
-      var edge = {source: e.source, target: e.target, type: e.type};
-      if (e.type === 'shared_company') edge.company = e.company || e.label || '';
-      if (e.type === 'shared_school') edge.school = e.school || e.label || '';
-      if (e.detail) edge.detail = e.detail;
-      return edge;
-    });
-
-    // Re-compute derived data with real data
-    for (var k in NODE_DEGREES) delete NODE_DEGREES[k];
+    ALL_EDGES = data.edges || [];
+    console.log('Loaded: ' + Object.keys(ALL_NODES).length + ' nodes, ' + ALL_EDGES.length + ' edges');
+    
+    // Recompute degrees
+    NODE_DEGREES = {};
     ALL_EDGES.forEach(function(e) {
       NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
       NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
     });
-
+    
+    // Recompute MAX_DEGREE
+    MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
+    
+    // Recompute TOP_KEY_NODES and KEY_NODE_SET
+    TOP_KEY_NODES = Object.entries(NODE_DEGREES)
+      .sort(function(a,b) { return b[1] - a[1]; })
+      .slice(0, 10);
+    KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
+    
+    // Rebuild adjacency
     for (var k in adjacency) delete adjacency[k];
     ALL_EDGES.forEach(function(e) {
       if (!adjacency[e.source]) adjacency[e.source] = [];
@@ -1697,20 +1696,61 @@ fetch('graph_data.json?t=' + Date.now())
       if (e.school) rev.school = e.school;
       adjacency[e.target].push(rev);
     });
-
-    var footer = document.getElementById('sidebar-footer');
-    if (footer) footer.innerHTML = '已同步 ' + data.count + ' 人 / ' + data.edge_count + ' 条关系边 | 数据更新: ' + (data.synced_at||'');
-
-    // Auto-show first person or render full network
-    var nodeKeys = Object.keys(ALL_NODES);
-    if (nodeKeys.length > 0) {
-      renderChart(nodeKeys[0]);
-    }
+    
+    // Rebuild adjMap (for BFS)
+    adjMap = {};
+    ALL_EDGES.forEach(function(e, idx) {
+      if (!adjMap[e.source]) adjMap[e.source] = [];
+      if (!adjMap[e.target]) adjMap[e.target] = [];
+      adjMap[e.source].push({node: e.target, edgeIdx: idx, edge: e});
+      adjMap[e.target].push({node: e.source, edgeIdx: idx, edge: e});
+    });
+    
+    // Rebuild allTags
+    allTags = {};
+    Object.values(ALL_NODES).forEach(function(n) {
+      if (n.tags) {
+        n.tags.split(",").forEach(function(t) {
+          t = t.trim();
+          if (t) allTags[t] = (allTags[t] || 0) + 1;
+        });
+      }
+    });
+    
+    // Rebuild companyPeople and schoolPeople
+    companyPeople = {};
+    schoolPeople = {};
+    Object.entries(ALL_NODES).forEach(function(entry) {
+      var name = entry[0], info = entry[1];
+      parseCompanyList(info.company).forEach(function(c) {
+        if (!companyPeople[c]) companyPeople[c] = [];
+        companyPeople[c].push(name);
+      });
+      if (info.school) {
+        var s = info.school.trim();
+        if (s) {
+          if (!schoolPeople[s]) schoolPeople[s] = [];
+          schoolPeople[s].push(name);
+        }
+      }
+    });
+    
+    // Rebuild autocomplete list
+    allNameList = Object.keys(ALL_NODES).sort();
+    
+    // Update sidebar footer
+    document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注';
+    
+    // Initialize UI
+    setupCompareInputs();
+    renderWelcome();
+    
+    // Force chart resize to fix rendering
+    setTimeout(function() { chart.resize(); }, 200);
   })
-  .catch(function(e) {
-    console.error('Data load failed:', e);
-    var footer = document.getElementById('sidebar-footer');
-    if (footer) footer.textContent = '数据加载失败，请刷新页面';
+  .catch(function(err) {
+    console.error('Failed to load graph_data.json:', err);
+    document.getElementById('sidebar-footer').innerHTML = '数据加载失败，请刷新页面重试';
   });
 </script>
 </body>
