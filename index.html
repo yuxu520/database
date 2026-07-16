@@ -1667,6 +1667,13 @@ fetch('graph_data.json?t=' + Date.now())
   .then(function(data) {
     ALL_NODES = data.nodes || {};
     ALL_EDGES = data.edges || [];
+    // 兼容旧格式：将 label 字段转换为 company/school
+    ALL_EDGES.forEach(function(e) {
+      if (e.label && !e.company && !e.school) {
+        if (e.type === 'shared_company') e.company = e.label;
+        else if (e.type === 'shared_school') e.school = e.label;
+      }
+    });
     console.log('Loaded: ' + Object.keys(ALL_NODES).length + ' nodes, ' + ALL_EDGES.length + ' edges');
     
     // Recompute degrees
