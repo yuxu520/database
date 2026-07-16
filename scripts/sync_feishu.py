@@ -94,11 +94,11 @@ def build_graph_data():
         name = safe_str(fields.get('姓名', '')).strip()
         if not name or name in nodes:
             return
-        company = safe_str(fields.get('公司', ''))
+        company = safe_str(fields.get('核心公司', ''))
         school = safe_str(fields.get('学校', ''))
         skills = safe_str(fields.get('技能标签', ''))
-        position = safe_str(fields.get('职位', ''))
-        education = safe_str(fields.get('学历', ''))
+        position = safe_str(fields.get('当前职位', ''))
+        education = safe_str(fields.get('最高学历', ''))
 
         nodes[name] = {
             'name': name,
