@@ -108,15 +108,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
-
-/* Loading overlay for live data */
-#loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,15,35,0.97); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:99999; transition: opacity 0.3s; }
-#loading-overlay .spinner { width:50px; height:50px; border:3px solid #333; border-top:3px solid #667eea; border-radius:50%; animation:spin 1s linear infinite; }
-@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-#loading-overlay .loading-text { color:#888; font-size:14px; margin-top:20px; }
-#loading-overlay .loading-error { color:#ff6b6b; font-size:14px; margin-top:20px; display:none; max-width:500px; text-align:center; line-height:1.8; }
-#loading-overlay .loading-fallback { color:#4ecdc4; font-size:12px; margin-top:10px; display:none; }
-
 </style>
 </head>
 <body>
@@ -247,159 +238,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     </div>
   </div>
 </div>
-
-<!-- Loading overlay for live data -->
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loading-text">正在从飞书加载最新数据...</div>
-  <div class="loading-error" id="loading-error"></div>
-  <div class="loading-fallback" id="loading-fallback">已加载本地缓存数据</div>
-</div>
-
-<script>
-// ===== 实时数据网关配置 =====
-// TODO: 部署 Worker 后，把下面 URL 替换为你的 Cloudflare Worker 地址
-const WORKER_URL = 'https://feishu-gateway.database-ruju.workers.dev';
-let DATA_LOADED = false;
-let LIVE_DATA_PENDING = true; // 数据正在加载中
-
-// 异步加载飞书实时数据
-(function loadLiveData() {
-  var loadingEl = document.getElementById('loading-overlay');
-  var loadingText = document.getElementById('loading-text');
-  var errorEl = document.getElementById('loading-error');
-  var fallbackEl = document.getElementById('loading-fallback');
-  
-  fetch(WORKER_URL + '/graph')
-    .then(function(resp) {
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      return resp.json();
-    })
-    .then(function(data) {
-      if (data.error) throw new Error(data.error);
-      
-      // 更新全局数据
-      window._LIVE_DATA = data;
-      DATA_LOADED = true;
-      
-      // 更新页脚
-      var footer = document.getElementById('sidebar-footer');
-      if (footer && data.stats) {
-        var timeStr = new Date(data.stats.updated_at).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'});
-        footer.innerHTML = '实时数据 | ' + (data.stats.total_nodes||0) + ' 人 / ' + (data.stats.total_edges||0) + ' 条边<br>更新于 ' + timeStr;
-      }
-      
-      // 隐藏 loading
-      loadingEl.style.display = 'none';
-      LIVE_DATA_PENDING = false;
-      
-      console.log('[Live] Loaded:', Object.keys(data.nodes).length, 'nodes,', data.edges.length, 'edges');
-      
-      // 如果页面已初始化，需要用新数据重新渲染
-      if (window._chartReady) {
-        applyLiveData(data);
-      }
-    })
-    .catch(function(err) {
-      console.warn('[Live] Fetch failed, using fallback data:', err.message);
-      loadingText.style.display = 'none';
-      loadingEl.querySelector('.spinner').style.display = 'none';
-      fallbackEl.style.display = 'block';
-      fallbackEl.textContent = '无法连接数据网关，使用本地缓存数据';
-      LIVE_DATA_PENDING = false;
-      
-      // 3秒后自动隐藏 loading，显示本地数据
-      setTimeout(function() {
-        loadingEl.style.display = 'none';
-      }, 2000);
-    });
-})();
-
-// 应用实时数据到图表
-function applyLiveData(data) {
-  // 清空并重建 ALL_NODES
-  Object.keys(ALL_NODES).forEach(function(k) { delete ALL_NODES[k]; });
-  Object.assign(ALL_NODES, data.nodes);
-  
-  // 清空并重建 ALL_EDGES
-  ALL_EDGES.length = 0;
-  data.edges.forEach(function(e) { ALL_EDGES.push(e); });
-  
-  // 重新计算度
-  Object.keys(NODE_DEGREES).forEach(function(k) { delete NODE_DEGREES[k]; });
-  ALL_EDGES.forEach(function(e) {
-    NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
-    NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
-  });
-  
-  // 更新 allNameList (用于搜索联想)
-  if (typeof allNameList !== 'undefined') {
-    allNameList = Object.values(ALL_NODES).map(function(n) {
-      return { name: n.name, company: n.company || '', title: n.title || '' };
-    });
-  }
-  
-  // 更新搜索结果
-  updateSearchResults();
-  
-  // 重新渲染
-  renderWelcome();
-}
-
-function updateSearchResults() {
-  var searchResults = document.getElementById('search-results');
-  if (!searchResults) return;
-  var html = '';
-  Object.keys(ALL_NODES).forEach(function(n) {
-    var info = ALL_NODES[n];
-    var isKey = KEY_NODE_SET.has(n);
-    html += '<div class="result-item" data-person="' + n.replace(/"/g,'&quot;') + '">';
-    html += '<div class="name">' + n + (isKey ? ' <span style="color:#ffd700;">&#9733;</span>' : '') + '</div>';
-    html += '<div class="info">' + (info.company || '') + ' | ' + (info.title || '') + '</div>';
-    html += '</div>';
-  });
-  searchResults.innerHTML = html;
-}
-</script>
-
 <script>
 let ALL_NODES = {};
 let ALL_EDGES = [];
 
-// Plan A: fetch graph_data.json dynamically
-(async function() {
-  try {
-    var resp = await fetch('graph_data.json?t=' + Date.now());
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    var data = await resp.json();
-    if (data && data.nodes) {
-      window._LIVE_DATA = data;
-      if (typeof applyLiveData === 'function') {
-        applyLiveData(data);
-        var footer = document.getElementById('sidebar-footer');
-        if (footer) {
-          footer.innerHTML = '共 ' + data.count + ' 人 / ' + (data.edge_count||0) + ' 条关系边 | 数据同步: ' + (data.synced_at||'');
-        }
-        window._chartReady = true;
-        window._liveApplied = true;
-        window.DATA_LOADED = true;
-      }
-    }
-  } catch(err) {
-    console.warn('graph_data.json load failed:', err.message);
-    var overlay = document.getElementById('loading-overlay');
-    var errDiv = overlay ? overlay.querySelector('.loading-error') : null;
-    if (errDiv) {
-      errDiv.style.display = 'block';
-      errDiv.textContent = 'Data load failed, using fallback';
-      setTimeout(function(){ if(overlay) overlay.style.opacity='0'; setTimeout(function(){overlay.style.display='none';},300); }, 1500);
-    }
-    if (typeof renderWelcome === 'function') renderWelcome();
-    window._chartReady = true;
-    window.DATA_LOADED = true;
-  }
-})();
+// ====== Async data loading ======
+let _initDone = false;
+function onDataReady() {
+  if (_initDone) return;
+  _initDone = true;
+  runPreComputations();
+  renderWelcome();
+}
 
+fetch('graph_data.json?t=' + Date.now())
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    ALL_NODES = data.nodes || {};
+    ALL_EDGES = data.edges || [];
+    var footer = document.getElementById('sidebar-footer');
+    if (footer) footer.innerHTML = '数据同步: ' + (data.synced_at||'') + ' | 节点: ' + data.count + ' | 边: ' + data.edge_count;
+    onDataReady();
+  })
+  .catch(function(e) {
+    console.error('Load failed:', e);
+    var footer = document.getElementById('sidebar-footer');
+    if (footer) footer.textContent = '数据加载失败，请刷新页面';
+  });
 
 
 const EDGE_COLORS = {
@@ -425,6 +290,7 @@ let compareA = null, compareB = null;
 let activeTags = [];
 let pathHighlightNodes = null;
 
+function runPreComputations() {
 // ====== Pre-computations ======
 const NODE_DEGREES = {};
 ALL_EDGES.forEach(function(e) {
@@ -1821,8 +1687,11 @@ chart.on('click', function(params) {
 window.addEventListener('resize', function() { chart.resize(); });
 
 // ====== Initial render ======
-if (!DATA_LOADED) { document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注'; }
-// Init handled by async loading script above
+document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注';
+setupCompareInputs();
+renderWelcome();
+
+} // end runPreComputations
 </script>
 </body>
 </html>
