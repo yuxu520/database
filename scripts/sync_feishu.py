@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-飞书多维表格 -> graph_data.json 同步脚本
-由 GitHub Actions 定时调用，输出格式与 ECharts HTML 完全兼容
+飞书多维表格 -> graph_data.json 同步脚本 v2
+修复：1) 关系字段解析 2) 公司/学校字段拆分 3) edge格式兼容
 """
 import os, json, random, time, sys, urllib.request, urllib.error
 
@@ -46,11 +46,10 @@ def fetch_all_records(token, table_id):
     all_records = []
     page_token = None
     while True:
-        params = {'page_size': '500'}
+        params = 'page_size=500'
         if page_token:
-            params['page_token'] = page_token
-        qs = '&'.join(f'{k}={v}' for k, v in params.items())
-        url = f'{FEISHU_API}/open-apis/bitable/v1/apps/{BASE_TOKEN}/tables/{table_id}/records?{qs}'
+            params += f'&page_token={page_token}'
+        url = f'{FEISHU_API}/open-apis/bitable/v1/apps/{BASE_TOKEN}/tables/{table_id}/records?{params}'
         result = api_request(url, headers={'Authorization': f'Bearer {token}'})
         if result.get('code') != 0:
             raise Exception(f'Fetch error [{table_id}]: {result.get("msg")}')
@@ -66,10 +65,63 @@ def safe_str(val):
     if val is None:
         return ''
     if isinstance(val, list):
-        return '、'.join(str(x) for x in val if x)
+        parts = []
+        for x in val:
+            if isinstance(x, dict):
+                t = x.get('text', '')
+                if t:
+                    parts.append(str(t))
+            elif x:
+                parts.append(str(x))
+        return '、'.join(parts)
     if isinstance(val, dict):
         return str(val.get('text', ''))
     return str(val)
+
+
+def extract_names_from_relation(val):
+    """从关系字段中提取人名列表，支持多种飞书返回格式"""
+    if val is None:
+        return []
+    names = []
+    if isinstance(val, str):
+        for sep in ['、', ',', '，', '\n']:
+            val = val.replace(sep, '、')
+        return [p.strip() for p in val.split('、') if p.strip()]
+    if isinstance(val, list):
+        for item in val:
+            if isinstance(item, dict):
+                text = item.get('text', '')
+                if text:
+                    for sep in ['、', ',', '，']:
+                        text = text.replace(sep, '、')
+                    for p in text.split('、'):
+                        p = p.strip()
+                        if p:
+                            names.append(p)
+            elif isinstance(item, str) and item.strip():
+                names.append(item.strip())
+        return names
+    if isinstance(val, dict):
+        text_arr = val.get('text_arr', [])
+        if text_arr:
+            return [str(t).strip() for t in text_arr if str(t).strip()]
+        text = val.get('text', '')
+        if text:
+            for sep in ['、', ',', '，']:
+                text = text.replace(sep, '、')
+            return [p.strip() for p in text.split('、') if p.strip()]
+        return names
+    return []
+
+
+def split_multi_value(val_str):
+    """拆分多值字段（如 '公司A、公司B' -> ['公司A', '公司B']）"""
+    if not val_str:
+        return []
+    for sep in ['、', ',', '，']:
+        val_str = val_str.replace(sep, '|')
+    return [p.strip() for p in val_str.split('|') if p.strip()]
 
 
 def build_graph_data():
@@ -89,6 +141,7 @@ def build_graph_data():
     edges = []
     company_groups = {}
     school_groups = {}
+    edge_set = set()
 
     def add_node(fields, source):
         name = safe_str(fields.get('姓名', '')).strip()
@@ -99,7 +152,6 @@ def build_graph_data():
         skills = safe_str(fields.get('技能标签', ''))
         position = safe_str(fields.get('当前职位', ''))
         education = safe_str(fields.get('最高学历', ''))
-
         nodes[name] = {
             'name': name,
             'company': company,
@@ -110,10 +162,10 @@ def build_graph_data():
             'source': source,
             'record_id': fields.get('record_id', ''),
         }
-        if company:
-            company_groups.setdefault(company, []).append(name)
-        if school:
-            school_groups.setdefault(school, []).append(name)
+        for c in split_multi_value(company):
+            company_groups.setdefault(c, []).append(name)
+        for s in split_multi_value(school):
+            school_groups.setdefault(s, []).append(name)
 
     for rec in core_records:
         f = rec.get('fields', {})
@@ -124,7 +176,8 @@ def build_graph_data():
         f['record_id'] = rec.get('record_id', '')
         add_node(f, '潜在人才')
 
-    # 关系边（核心人才表）
+    # 关系边
+    relation_count = 0
     for rec in core_records:
         fields = rec.get('fields', {})
         name = safe_str(fields.get('姓名', '')).strip()
@@ -132,29 +185,48 @@ def build_graph_data():
             continue
         for rf in RELATION_FIELDS:
             val = fields.get(rf['field_name'])
-            if isinstance(val, dict):
-                text_arr = val.get('text_arr', [])
-            elif isinstance(val, list):
-                text_arr = [str(x).strip() for x in val if x]
-            else:
-                text_arr = []
-            for target in text_arr:
-                target = str(target).strip()
+            targets = extract_names_from_relation(val)
+            for target in targets:
+                target = target.strip()
                 if target and target != name and target in nodes:
-                    edges.append({'source': name, 'target': target, 'type': rf['edge_type']})
+                    edge_key = tuple(sorted([name, target])) + (rf['edge_type'],)
+                    if edge_key not in edge_set:
+                        edge_set.add(edge_key)
+                        edges.append({
+                            'source': name,
+                            'target': target,
+                            'type': rf['edge_type']
+                        })
+                        relation_count += 1
+    print(f'  -> 关系边: {relation_count}')
 
-    # 同公司/同学校边（采样限制）
+    # 同公司/同学校边
+    shared_count = 0
     def add_shared_edges(group_map, edge_type):
+        nonlocal shared_count
         for key, names in group_map.items():
             if len(names) < 2:
                 continue
             sampled = random.sample(names, min(len(names), MAX_SHARED_PER_GROUP))
             for i in range(len(sampled)):
                 for j in range(i + 1, len(sampled)):
-                    edges.append({'source': sampled[i], 'target': sampled[j], 'type': edge_type, 'label': key})
+                    pair = tuple(sorted([sampled[i], sampled[j]]))
+                    edge_key = pair + (edge_type,)
+                    if edge_key not in edge_set:
+                        edge_set.add(edge_key)
+                        field_val = 'company' if edge_type == 'shared_company' else 'school'
+                        edge = {
+                            'source': sampled[i],
+                            'target': sampled[j],
+                            'type': edge_type,
+                        }
+                        edge[field_val] = key
+                        edges.append(edge)
+                        shared_count += 1
 
     add_shared_edges(company_groups, 'shared_company')
     add_shared_edges(school_groups, 'shared_school')
+    print(f'  -> shared edges: {shared_count}')
 
     return {
         'nodes': nodes,
