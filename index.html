@@ -212,12 +212,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       <button class="ctrl-btn" data-filter="strong_colleague">强相关同事</button>
       <button class="ctrl-btn" data-filter="classmate">同学</button>
       <button class="ctrl-btn" data-filter="weak_colleague">弱相关同事</button>
+      <button class="ctrl-btn" data-filter="shared_company">同公司</button>
       <button class="ctrl-btn" data-filter="shared_school">同学校</button>
     </div>
     <div id="legend">
       <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>强相关同事</div>
       <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>同学</div>
       <div class="legend-item"><div class="legend-color" style="background:#ffd93d"></div>弱相关同事</div>
+      <div class="legend-item"><div class="legend-color" style="background:#45b7aa"></div>同公司(隐含)</div>
       <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div>同学校(校友)</div>
       <div style="border-top:1px solid #333;margin-top:6px;padding-top:6px;">
         <div class="legend-item"><span style="color:#ffd700;margin-right:8px;">&#9733;</span>Top连接人才</div>
@@ -246,12 +248,14 @@ const EDGE_COLORS = {
   "strong_colleague": "#ff6b6b",
   "classmate": "#4ecdc4",
   "weak_colleague": "#ffd93d",
+  "shared_company": "#45b7aa",
   "shared_school": "#a78bfa"
 };
 const EDGE_LABELS = {
   "strong_colleague": "强相关同事",
   "classmate": "同学",
   "weak_colleague": "弱相关同事",
+  "shared_company": "同公司",
   "shared_school": "同学校(校友)"
 };
 
@@ -1187,16 +1191,29 @@ function showPerson(name) {
   
   html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
   html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关系网络</div>';
-  Object.entries(typeCounts).forEach(function(entry) {
-    var type = entry[0], count = entry[1];
-    html += '<div class="detail-row"><span class="detail-label" style="color:' + EDGE_COLORS[type] + '">' + EDGE_LABELS[type] + '</span><span class="detail-value">' + count + '人</span></div>';
+  var typeDisplayOrder = ['strong_colleague', 'classmate', 'weak_colleague', 'shared_company', 'shared_school'];
+  typeDisplayOrder.forEach(function(type) {
+    if (typeCounts[type]) {
+      html += '<div class="detail-row"><span class="detail-label" style="color:' + EDGE_COLORS[type] + '">' + EDGE_LABELS[type] + '</span><span class="detail-value">' + typeCounts[type] + '人</span></div>';
+    }
   });
   html += '</div>';
   
-  // List connected people
+  // List connected people - 按关系类型排序
   var connectedSet = new Set();
-  conns.forEach(function(e) { connectedSet.add(e.target); });
+  var connTypeMap = {};
+  conns.forEach(function(e) { 
+    connectedSet.add(e.target);
+    connTypeMap[e.target] = e.type;
+  });
   var connected = Array.from(connectedSet);
+  // 排序优先级：strong_colleague > classmate > weak_colleague > shared_company > shared_school
+  var typeOrder = { 'strong_colleague': 1, 'classmate': 2, 'weak_colleague': 3, 'shared_company': 4, 'shared_school': 5 };
+  connected.sort(function(a, b) {
+    var oa = typeOrder[connTypeMap[a]] || 99;
+    var ob = typeOrder[connTypeMap[b]] || 99;
+    return oa - ob;
+  });
   
   html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
   html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关联人才 (' + connected.length + '人)</div>';
@@ -1364,7 +1381,7 @@ function getCategory(name) {
   var conns = adjacency[currentPerson] || [];
   var edge = conns.find(function(e) { return e.target === name; });
   if (!edge) return 0;
-  var typeMap = { 'strong_colleague': 1, 'classmate': 2, 'weak_colleague': 3, 'shared_school': 4 };
+  var typeMap = { 'strong_colleague': 1, 'classmate': 2, 'weak_colleague': 3, 'shared_company': 4, 'shared_school': 5 };
   return typeMap[edge.type] || 0;
 }
 
