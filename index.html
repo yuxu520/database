@@ -242,6 +242,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 let ALL_NODES = {};
 let ALL_EDGES = [];
 
+
 const EDGE_COLORS = {
   "strong_colleague": "#ff6b6b",
   "weak_colleague": "#ffd93d",
@@ -265,7 +266,6 @@ let compareA = null, compareB = null;
 let activeTags = [];
 let pathHighlightNodes = null;
 
-function startApp() {
 // ====== Pre-computations ======
 const NODE_DEGREES = {};
 ALL_EDGES.forEach(function(e) {
@@ -1666,32 +1666,52 @@ document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_N
 setupCompareInputs();
 renderWelcome();
 
-} // end startApp
 
 // ====== Async data loading ======
 fetch('graph_data.json?t=' + Date.now())
   .then(function(r) { return r.json(); })
   .then(function(data) {
     ALL_NODES = data.nodes || {};
-    // Convert edges: graph_data uses "label", original HTML uses "company"/"school"
     ALL_EDGES = (data.edges || []).map(function(e) {
       var edge = {source: e.source, target: e.target, type: e.type};
-      if (e.type === 'shared_company') edge.company = e.label || e.company || '';
-      if (e.type === 'shared_school') edge.school = e.label || e.school || '';
+      if (e.type === 'shared_company') edge.company = e.company || e.label || '';
+      if (e.type === 'shared_school') edge.school = e.school || e.label || '';
       if (e.detail) edge.detail = e.detail;
-      if (e.company && !edge.company) edge.company = e.company;
-      if (e.school && !edge.school) edge.school = e.school;
       return edge;
     });
+
+    // Re-compute derived data with real data
+    for (var k in NODE_DEGREES) delete NODE_DEGREES[k];
+    ALL_EDGES.forEach(function(e) {
+      NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
+      NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
+    });
+
+    for (var k in adjacency) delete adjacency[k];
+    ALL_EDGES.forEach(function(e) {
+      if (!adjacency[e.source]) adjacency[e.source] = [];
+      if (!adjacency[e.target]) adjacency[e.target] = [];
+      adjacency[e.source].push(e);
+      var rev = {source: e.target, target: e.source, type: e.type};
+      if (e.company) rev.company = e.company;
+      if (e.school) rev.school = e.school;
+      adjacency[e.target].push(rev);
+    });
+
     var footer = document.getElementById('sidebar-footer');
-    if (footer) footer.innerHTML = '\u5DF2\u540C\u6B65 ' + data.count + ' \u4EBA / ' + data.edge_count + ' \u6761\u5173\u7CFB\u8FB9 | \u6570\u636E\u66F4\u65B0: ' + (data.synced_at||'');
-    startApp();
+    if (footer) footer.innerHTML = '已同步 ' + data.count + ' 人 / ' + data.edge_count + ' 条关系边 | 数据更新: ' + (data.synced_at||'');
+
+    // Auto-show first person or render full network
+    var nodeKeys = Object.keys(ALL_NODES);
+    if (nodeKeys.length > 0) {
+      renderChart(nodeKeys[0]);
+    }
   })
   .catch(function(e) {
     console.error('Data load failed:', e);
-    document.getElementById('sidebar-footer').textContent = '\u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u5237\u65B0\u9875\u9762';
+    var footer = document.getElementById('sidebar-footer');
+    if (footer) footer.textContent = '数据加载失败，请刷新页面';
   });
-
 </script>
 </body>
 </html>
