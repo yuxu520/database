@@ -295,6 +295,9 @@ ALL_EDGES.forEach(function(e) {
   var rev = {source: e.target, target: e.source, type: e.type};
   if (e.company) rev.company = e.company;
   if (e.school) rev.school = e.school;
+  if (e.department) rev.department = e.department;
+  if (e.major) rev.major = e.major;
+  if (e.overlap) rev.overlap = e.overlap;
   adjacency[e.target].push(rev);
 });
 
@@ -471,7 +474,7 @@ function highlightByTag(tags) {
   var chartEdges = relevantEdges.map(function(e) {
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#444',
         width: (matchedSet.has(e.source) && matchedSet.has(e.target)) ? 2 : 1,
@@ -580,8 +583,9 @@ function findPath() {
       var e = found.edges[i];
       var color = EDGE_COLORS[e.type] || '#888';
       var detail = EDGE_LABELS[e.type] || e.type;
-      if (e.company) detail += '(' + e.company + ')';
-      if (e.school) detail += '(' + e.school + ')';
+      if (e.company) detail += '(' + e.company + (e.department ? '·' + e.department : '') + ')';
+      if (e.school) detail += '(' + e.school + (e.major ? '·' + e.major : '') + ')';
+      if (e.overlap) detail += ' ' + e.overlap;
       html += ' <span style="color:' + color + ';font-size:10px;">&#8594;' + detail + '&#8594;</span> ';
     }
   });
@@ -636,7 +640,7 @@ function highlightPath(pathNodes, pathEdges) {
     var isPathEdge = edgeKeys.has(e.source + '|' + e.target);
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
       lineStyle: {
         color: isPathEdge ? (EDGE_COLORS[e.type] || '#667eea') : '#222',
         width: isPathEdge ? 4 : 0.5,
@@ -1086,7 +1090,7 @@ function renderFullNetwork() {
   var chartEdges = relevantEdges.map(function(e) {
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#333',
         width: e.type === 'strong_colleague' ? 1.5 : 0.8,
@@ -1138,6 +1142,9 @@ function buildTooltip() {
           tip += '<b>' + (EDGE_LABELS[d._type] || d._type) + '</b>';
           if (d._company) tip += '<br/>公司: ' + d._company;
           if (d._school) tip += '<br/>学校: ' + d._school;
+          if (d._department) tip += '<br/>部门: ' + d._department;
+          if (d._major) tip += '<br/>专业: ' + d._major;
+          if (d._overlap) tip += '<br/>交叉时间: ' + d._overlap;
           tip += '<br/>' + d.source + ' ↔ ' + d.target;
         } else {
           tip = d.source + ' ↔ ' + d.target;
@@ -1222,10 +1229,19 @@ function showPerson(name) {
     var connEdge = conns.find(function(e) { return e.target === cn; });
     var color = connEdge ? EDGE_COLORS[connEdge.type] : '#888';
     var isKey = KEY_NODE_SET.has(cn);
+    // 构建交叉信息摘要
+    var overlapInfo = '';
+    if (connEdge) {
+      var parts = [];
+      if (connEdge.company) parts.push(connEdge.company + (connEdge.department ? '·' + connEdge.department : ''));
+      if (connEdge.school) parts.push(connEdge.school + (connEdge.major ? '·' + connEdge.major : ''));
+      if (connEdge.overlap) parts.push(connEdge.overlap);
+      if (parts.length > 0) overlapInfo = ' | ' + parts.join(' | ');
+    }
     html += '<div class="result-item conn-person-item" data-person="' + escName(cn) + '" style="padding:6px 0;border:none;">';
     html += '<span class="name" style="color:' + color + '">' + cn + (isKey ? ' &#9733;' : '') + '</span>';
     if (ci) {
-      html += '<span class="info">' + (ci.company || '') + ' ' + (ci.title || '') + '</span>';
+      html += '<span class="info">' + (ci.company || '') + ' ' + (ci.title || '') + overlapInfo + '</span>';
     }
     html += '</div>';
   });
@@ -1310,7 +1326,7 @@ function renderChart(centerName) {
   var chartEdges = filtered.map(function(e) {
     return {
       source: centerName, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#666',
         width: e.type === 'strong_colleague' ? 3 : (e.type === 'weak_colleague' ? 2 : 1.5),
@@ -1334,7 +1350,7 @@ function renderChart(centerName) {
           addedEdgeKeys.add(edgeKey);
           chartEdges.push({
             source: cn, target: e.target,
-            _type: e.type, _company: e.company || null, _school: e.school || null,
+            _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
             lineStyle: {
               color: EDGE_COLORS[e.type] || '#444',
               width: 1,
@@ -1716,6 +1732,9 @@ fetch('graph_data.json?t=' + Date.now())
       var rev = {source: e.target, target: e.source, type: e.type};
       if (e.company) rev.company = e.company;
       if (e.school) rev.school = e.school;
+      if (e.department) rev.department = e.department;
+      if (e.major) rev.major = e.major;
+      if (e.overlap) rev.overlap = e.overlap;
       adjacency[e.target].push(rev);
     });
     
