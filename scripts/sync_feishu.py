@@ -141,6 +141,9 @@ def ts_to_ym(ts_ms):
 
 def calc_overlap_period(start1, end1, start2, end2):
     """计算两个时间段的重叠部分，返回 'YYYY.MM-YYYY.MM' 或 None"""
+    # start 必须有值，否则无法计算
+    if not start1 or not start2:
+        return None
     # end 为 None 表示当前在职，用极大值替代
     BIG = 9999999999999
     s1, e1 = start1, end1 or BIG
