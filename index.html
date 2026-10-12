@@ -5,20 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>人才社交网络图 V2</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="graph_data.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f23; color: #e0e0e0; overflow: hidden; }
 #app { display: flex; height: 100vh; }
-#sidebar { width: 340px; min-width: 340px; background: linear-gradient(180deg, #1a1a2e 0%, #141428 100%); border-right: 1px solid rgba(102,126,234,0.15); display: flex; flex-direction: column; overflow: hidden; }
-#sidebar-header { padding: 14px 16px; border-bottom: 1px solid rgba(102,126,234,0.15); display: flex; align-items: center; gap: 8px; }
-#sidebar-header h1 { font-size: 16px; background: linear-gradient(135deg, #667eea, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; white-space: nowrap; font-weight: 600; letter-spacing: 0.5px; }
-.sidebar-tab { padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; background: rgba(22,33,62,0.6); color: #888; border: 1px solid rgba(102,126,234,0.2); transition: all 0.25s; }
-.sidebar-tab:hover { background: rgba(102,126,234,0.15); border-color: rgba(102,126,234,0.4); color: #c0c8d8; }
-.sidebar-tab.active { background: linear-gradient(135deg, #667eea, #5568d3); color: #fff; border-color: #667eea; box-shadow: 0 2px 6px rgba(102,126,234,0.3); }
-#search-box { padding: 14px 16px; border-bottom: 1px solid rgba(102,126,234,0.1); }
-#search-input { width: 100%; padding: 11px 14px; border: 1px solid rgba(102,126,234,0.25); border-radius: 8px; background: rgba(22,33,62,0.5); color: #fff; font-size: 14px; outline: none; transition: all 0.25s; }
-#search-input:focus { border-color: #667eea; background: rgba(22,33,62,0.8); box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-#search-input::placeholder { color: #666; }
+#sidebar { width: 340px; min-width: 340px; background: #1a1a2e; border-right: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+#sidebar-header { padding: 12px 16px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
+#sidebar-header h1 { font-size: 15px; color: #667eea; flex: 1; white-space: nowrap; }
+.sidebar-tab { padding: 5px 7px; border-radius: 6px; font-size: 11px; cursor: pointer; background: #16213e; color: #888; border: 1px solid #333; transition: all 0.2s; }
+.sidebar-tab:hover, .sidebar-tab.active { background: #667eea; color: #fff; border-color: #667eea; }
+#search-box { padding: 12px 16px; border-bottom: 1px solid #333; }
+#search-input { width: 100%; padding: 10px 14px; border: 1px solid #444; border-radius: 8px; background: #16213e; color: #fff; font-size: 14px; outline: none; }
+#search-input:focus { border-color: #667eea; }
 #search-results { max-height: 200px; overflow-y: auto; border-bottom: 1px solid #333; }
 .result-item { padding: 8px 16px; cursor: pointer; border-bottom: 1px solid #222; transition: background 0.2s; }
 .result-item:hover { background: #16213e; }
@@ -88,21 +87,57 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 /* Chart area */
 #chart-container { position:relative; flex: 1; position: relative; }
 #chart { width: 100%; height: 100%; }
-#controls { position: absolute; top: 16px; left: 16px; display: flex; gap: 6px; flex-wrap: wrap; max-width: 60%; }
-.ctrl-btn { padding: 7px 14px; border: 1px solid rgba(102,126,234,0.3); border-radius: 6px; background: rgba(20,20,40,0.85); color: #c0c8d8; cursor: pointer; font-size: 11px; transition: all 0.25s; white-space: nowrap; backdrop-filter: blur(8px); }
-.ctrl-btn:hover { background: rgba(102,126,234,0.15); border-color: rgba(102,126,234,0.6); color: #fff; }
-.ctrl-btn.active { background: linear-gradient(135deg, #667eea, #5568d3); border-color: #667eea; color: #fff; box-shadow: 0 2px 8px rgba(102,126,234,0.4); }
-#legend { position: absolute; top: 16px; right: 16px; background: rgba(18,18,38,0.92); padding: 14px 18px; border-radius: 10px; border: 1px solid rgba(102,126,234,0.2); backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-.legend-item { display: flex; align-items: center; margin-bottom: 6px; font-size: 12px; color: #b8c0d0; }
-.legend-color { width: 26px; height: 4px; border-radius: 2px; margin-right: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-#export-btn { margin-top: 10px; padding: 7px 14px; border: 1px solid rgba(78,205,196,0.4); border-radius: 6px; background: transparent; color: #4ecdc4; cursor: pointer; font-size: 11px; width: 100%; transition: all 0.25s; }
-#export-btn:hover { background: rgba(78,205,196,0.15); border-color: #4ecdc4; box-shadow: 0 2px 8px rgba(78,205,196,0.3); }
+#controls { position: absolute; top: 16px; left: 16px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 72%; }
+.ctrl-btn { padding: 5px 9px; border: 1px solid #444; border-radius: 6px; background: rgba(26,26,46,0.92); color: #e0e0e0; cursor: pointer; font-size: 11px; transition: all 0.2s; white-space: nowrap; }
+.ctrl-btn:hover { background: #16213e; border-color: #667eea; }
+.ctrl-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+#legend { position: absolute; top: 16px; right: 16px; background: rgba(26,26,46,0.92); padding: 12px 16px; border-radius: 8px; border: 1px solid #333; }
+.legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 11px; }
+.legend-color { width: 24px; height: 4px; border-radius: 2px; margin-right: 8px; }
+#export-btn { margin-top: 8px; padding: 6px 12px; border: 1px solid #4ecdc4; border-radius: 6px; background: transparent; color: #4ecdc4; cursor: pointer; font-size: 11px; width: 100%; transition: all 0.2s; }
+#export-btn:hover { background: #4ecdc4; color: #000; }
 
 /* View mode buttons */
-#view-modes { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(18,18,38,0.92); padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(102,126,234,0.2); backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-.view-btn { padding: 7px 16px; border: 1px solid rgba(102,126,234,0.3); border-radius: 6px; background: transparent; color: #9ca3af; cursor: pointer; font-size: 12px; transition: all 0.25s; }
-.view-btn:hover { border-color: rgba(102,126,234,0.6); color: #e0e0e0; }
-.view-btn.active { background: linear-gradient(135deg, #667eea, #5568d3); border-color: #667eea; color: #fff; box-shadow: 0 2px 8px rgba(102,126,234,0.4); }
+#view-modes { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(26,26,46,0.92); padding: 8px 12px; border-radius: 8px; border: 1px solid #333; }
+.view-btn { padding: 6px 14px; border: 1px solid #444; border-radius: 6px; background: transparent; color: #aaa; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.view-btn:hover { border-color: #667eea; color: #fff; }
+.view-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+
+.informant-card { background:linear-gradient(135deg,rgba(240,165,0,0.08),rgba(240,165,0,0.02)); border:1px solid rgba(240,165,0,0.2); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+.referral-person { padding:5px 0; border-bottom:1px solid #1a1a2e; font-size:12px; display:flex; align-items:center; gap:6px; }
+.referral-person:last-child { border-bottom:none; }
+.referral-badge { background:#f0a500; color:#000; font-size:9px; padding:1px 4px; border-radius:3px; font-weight:700; }
+.referral-badge.in-graph { background:#4ecdc4; }
+.ghost-node-indicator { width:8px; height:8px; border-radius:50%; background:rgba(240,165,0,0.3); border:1px dashed #f0a500; display:inline-block; flex-shrink:0; margin-left:2px; }
+.relation-badge { display:inline-block; font-size:10px; padding:2px 6px; border-radius:3px; font-weight:600; margin-right:4px; }
+.relation-badge.referral { background:rgba(240,165,0,0.15); color:#f0a500; border:1px solid rgba(240,165,0,0.4); }
+.relation-badge.colleague { background:rgba(255,107,107,0.12); color:#ff6b6b; border:1px solid rgba(255,107,107,0.35); }
+.relation-badge.classmate { background:rgba(107,207,127,0.12); color:#6bcf7f; border:1px solid rgba(107,207,127,0.35); }
+.relation-badge.none { background:rgba(120,120,120,0.15); color:#888; border:1px solid #444; }
+
+/* ====== 被推荐人详情弹窗 ====== */
+#rec-modal-mask { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(2px); z-index:1000; display:none; }
+#rec-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:600px; max-width:94vw; max-height:86vh; overflow-y:auto; background:#13132b; border:1px solid rgba(240,165,0,0.35); border-radius:12px; box-shadow:0 12px 48px rgba(0,0,0,0.6); z-index:1001; display:none; padding:20px 24px; }
+.rec-modal-header { display:flex; align-items:flex-start; border-bottom:1px solid rgba(240,165,0,0.25); padding-bottom:14px; margin-bottom:14px; }
+.rec-modal-title { font-size:20px; font-weight:700; color:#fff; }
+.rec-modal-sub { font-size:12px; color:#aaa; margin-top:4px; line-height:1.6; }
+.rec-modal-close { margin-left:auto; cursor:pointer; color:#888; font-size:20px; line-height:1; padding:2px 6px; border-radius:4px; }
+.rec-modal-close:hover { color:#fff; background:rgba(255,255,255,0.08); }
+.rec-section { margin-bottom:16px; }
+.rec-section-title { font-size:13px; font-weight:600; color:#f0a500; margin-bottom:8px; }
+.rec-row { display:flex; font-size:12px; padding:6px 10px; border-radius:6px; background:rgba(255,255,255,0.03); margin-bottom:4px; align-items:baseline; }
+.rec-row .r-main { color:#ddd; font-weight:600; }
+.rec-row .r-sub { color:#888; margin-left:8px; flex:1; }
+.rec-row .r-period { color:#667eea; margin-left:auto; font-size:11px; white-space:nowrap; }
+.rec-highlight { font-size:12px; color:#ccc; line-height:1.7; background:rgba(240,165,0,0.06); border-left:3px solid #f0a500; padding:8px 12px; border-radius:0 6px 6px 0; }
+.rec-goto-graph { display:inline-block; margin-top:4px; font-size:12px; color:#4ecdc4; cursor:pointer; border:1px solid rgba(78,205,196,0.4); padding:4px 12px; border-radius:6px; }
+.rec-goto-graph:hover { background:rgba(78,205,196,0.1); }
+.rec-empty { color:#777; font-size:12px; padding:14px; text-align:center; background:rgba(255,255,255,0.02); border-radius:8px; line-height:1.8; }
+.goto-person-btn { margin:2px 0 10px 20px; padding:6px 12px; font-size:12px; color:#f0a500; background:rgba(240,165,0,0.1); border:1px solid rgba(240,165,0,0.45); border-radius:6px; cursor:pointer; text-align:center; transition:all 0.15s; }
+.goto-person-btn:hover { background:rgba(240,165,0,0.22); color:#ffc233; border-color:#f0a500; }
+.inf-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; user-select:none; padding:4px 6px; border-radius:6px; }
+.inf-header:hover { background:rgba(240,165,0,0.08); }
+.inf-arrow { font-size:9px; color:#f0a500; width:14px; flex-shrink:0; }
 
 #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #667eea; font-size: 16px; }
 
@@ -118,6 +153,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <div id="sidebar-header">
       <h1>&#127760; 人才网络</h1>
       <div class="sidebar-tab active" data-tab="search" title="搜索">&#128269;</div>
+      <div class="sidebar-tab" data-tab="referral" title="线人推荐" style="color:#f0a500;">&#129309;</div>
       <div class="sidebar-tab" data-tab="path" title="路径">&#128279;</div>
       <div class="sidebar-tab" data-tab="compare" title="对比">&#9878;&#65039;</div>
       <div class="sidebar-tab" data-tab="tags" title="技能">&#127991;&#65039;</div>
@@ -188,6 +224,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       </div>
     </div>
     
+    <div id="referral-panel" style="display:none;padding:12px 16px;flex:1;overflow-y:auto;min-height:0;">
+      <div id="referral-content"></div>
+    </div>
+    
     <div id="timeline-panel">
       <div style="font-size:13px;color:#667eea;margin-bottom:8px;font-weight:600;">&#128197; 职业经历时间线</div>
       <div id="timeline-content"></div>
@@ -210,17 +250,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       <button class="ctrl-btn" id="home-btn" style="background:rgba(102,126,234,0.85);border-color:#667eea;color:#fff;display:none;letter-spacing:2px;padding:6px 14px;" title="返回首页">&#127968; 首页</button>
       <button class="ctrl-btn active" data-filter="all">全部关系</button>
       <button class="ctrl-btn" data-filter="strong_colleague">强相关同事</button>
-      <button class="ctrl-btn" data-filter="classmate">同学</button>
       <button class="ctrl-btn" data-filter="weak_colleague">弱相关同事</button>
+      <button class="ctrl-btn" data-filter="classmate">同学</button>
       <button class="ctrl-btn" data-filter="shared_company">同公司</button>
       <button class="ctrl-btn" data-filter="shared_school">同学校</button>
+      <button class="ctrl-btn" data-filter="referral" style="display:none;color:#f0a500;border-color:rgba(240,165,0,0.5);">推荐人脉</button>
     </div>
     <div id="legend">
       <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>强相关同事</div>
-      <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>同学</div>
       <div class="legend-item"><div class="legend-color" style="background:#ffd93d"></div>弱相关同事</div>
-      <div class="legend-item"><div class="legend-color" style="background:#45b7aa"></div>同公司(隐含)</div>
-      <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div>同学校(校友)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#6bcf7f"></div>同学</div>
+      <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>同公司(隐含)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div>同学校(隐含)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f0a500"></div>推荐人脉</div>
       <div style="border-top:1px solid #333;margin-top:6px;padding-top:6px;">
         <div class="legend-item"><span style="color:#ffd700;margin-right:8px;">&#9733;</span>Top连接人才</div>
       </div>
@@ -232,32 +274,151 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       <button class="view-btn" data-view="school">&#127891; 学校视图</button>
       <button class="view-btn" data-view="timeline">&#128197; 时间线</button>
     </div>
-    <div id="view-filter" style="display:none;position:absolute;top:52px;left:50%;transform:translateX(-50%);background:rgba(18,18,38,0.92);padding:10px 16px;border-radius:10px;border:1px solid rgba(102,126,234,0.2);align-items:center;gap:10px;z-index:10;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-      <input id="view-filter-input" placeholder="输入公司/学校名筛选" style="padding:8px 12px;border:1px solid rgba(102,126,234,0.25);border-radius:6px;background:rgba(22,33,62,0.6);color:#fff;font-size:13px;outline:none;width:220px;transition:all 0.25s;" list="view-filter-datalist">
+    <div id="view-filter" style="display:none;position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,0.95);padding:8px 14px;border-radius:8px;border:1px solid #333;display:none;align-items:center;gap:8px;z-index:10;">
+      <input id="view-filter-input" placeholder="输入公司/学校名筛选" style="padding:6px 10px;border:1px solid #444;border-radius:6px;background:#16213e;color:#fff;font-size:13px;outline:none;width:220px;" list="view-filter-datalist">
       <datalist id="view-filter-datalist"></datalist>
-      <button id="view-filter-btn" style="padding:8px 16px;border:none;border-radius:6px;background:linear-gradient(135deg,#667eea,#5568d3);color:#fff;cursor:pointer;font-size:12px;box-shadow:0 2px 6px rgba(102,126,234,0.3);transition:all 0.25s;">筛选</button>
-      <button id="view-filter-reset" style="padding:8px 12px;border:1px solid rgba(102,126,234,0.2);border-radius:6px;background:transparent;color:#888;cursor:pointer;font-size:12px;transition:all 0.25s;">重置</button>
+      <button id="view-filter-btn" style="padding:6px 14px;border:1px solid #667eea;border-radius:6px;background:#667eea;color:#fff;cursor:pointer;font-size:12px;">筛选</button>
+      <button id="view-filter-reset" style="padding:6px 10px;border:1px solid #444;border-radius:6px;background:transparent;color:#888;cursor:pointer;font-size:12px;">重置</button>
     </div>
   </div>
 </div>
+
+<!-- ====== 被推荐人详情弹窗 ====== -->
+<div id="rec-modal-mask" onclick="closeRecommendedDetail()"></div>
+<div id="rec-modal">
+  <div id="rec-modal-body"></div>
+</div>
+
 <script>
-let ALL_NODES = {};
-let ALL_EDGES = [];
+// 数据由 graph_data.js 动态提供（GitHub Actions 每10分钟从飞书同步）
+const ALL_NODES = window.ALL_NODES || {};
+const ALL_EDGES = window.ALL_EDGES || [];
 
 const EDGE_COLORS = {
   "strong_colleague": "#ff6b6b",
-  "classmate": "#4ecdc4",
   "weak_colleague": "#ffd93d",
-  "shared_company": "#45b7aa",
+  "classmate": "#6bcf7f",
+  "shared_company": "#4ecdc4",
   "shared_school": "#a78bfa"
 };
 const EDGE_LABELS = {
   "strong_colleague": "强相关同事",
-  "classmate": "同学",
   "weak_colleague": "弱相关同事",
+  "classmate": "同学",
   "shared_company": "同公司",
-  "shared_school": "同学校(校友)"
+  "shared_school": "同学校"
 };
+
+// ====== 线人推荐数据 ======
+const INFORMANTS = ["刘峰"];
+const REFERRAL_DATA = {
+  "刘峰": ["曹原", "陈谭坤", "吴显", "薛清风", "顾兵", "李小金", "李苍松", "杨钢", "陈孟", "杨盛波", "徐博文", "吴浩然", "卞州罡", "邵晓伟", "石宁", "曾文科", "陈国栋", "程元谦"]
+};
+EDGE_COLORS["referral"] = "#f0a500";
+EDGE_LABELS["referral"] = "推荐人脉";
+
+// ====== 被推荐人详细履历（有简历数据者）======
+const RECOMMENDED_DETAILS = {
+  "李苍松": {
+    company: "华为", title: "高级软件工程师/系统架构师", city: "武汉", years: "19年", age: 46,
+    school: "华中科技大学", degree: "本科", major: "计算机",
+    highlight: "华为光网络NCE云化网管高级SE，主导2000+人月大型版本系统设计",
+    education: [
+      { school: "华中科技大学", major: "计算机", degree: "本科", period: "2000.09 - 2004.07" }
+    ],
+    work: [
+      { company: "华为技术有限公司", title: "高级软件工程师/系统架构师(SE)", period: "2007.09 - 2025.02" },
+      { company: "深圳市清华斯维尔软件科技有限公司", title: "软件工程师", period: "2004.02 - 2007.09" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2007.09-2025.02 任职，与刘峰同在华为" }
+    ]
+  },
+  "陈孟": {
+    company: "华为", title: "终端高级工程师", city: "武汉", years: "8年", age: 32,
+    school: "武汉大学", degree: "硕士", major: "电子信息",
+    highlight: "华为终端C++/鸿蒙桌面开发领队，主持鸿蒙5X布局与内存优化项目",
+    education: [
+      { school: "武汉大学", major: "电子信息", degree: "硕士", period: "2015.09 - 2018.06" },
+      { school: "武汉大学", major: "测控技术与仪器", degree: "本科", period: "2011.09 - 2015.06" }
+    ],
+    work: [
+      { company: "华为终端有限公司武汉分公司", title: "高级工程师（桌面内存优化）", period: "2025.12 - 至今" },
+      { company: "华为终端有限公司武汉分公司", title: "高级工程师（桌面5X布局领队）", period: "2025.02 - 2025.11" },
+      { company: "华为", title: "C++高级工程师", period: "2018.07 - 2025.02" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2018.07 至今任职，与刘峰同在华为" }
+    ]
+  },
+  "杨盛波": {
+    company: "华为", title: "高级工程师", city: "深圳", years: "16年", age: 41,
+    school: "桂林电子科技大学", degree: "硕士", major: "电路与系统",
+    highlight: "华为5G上行算法Owner、海思内存芯片仿真负责人、智能终端底层驱动与AI框架研发",
+    education: [
+      { school: "桂林电子科技大学", major: "电路与系统", degree: "硕士", period: "2006.09 - 2009.07" },
+      { school: "桂林电子科技大学", major: "微电子学与固体电子学", degree: "本科", period: "2002.09 - 2006.07" }
+    ],
+    work: [
+      { company: "华为技术有限公司", title: "高级工程师（终端BG/海思/无线）", period: "2016.07 - 至今" },
+      { company: "上海贝尔/海能达", title: "高级研发工程师", period: "2013.11 - 2016.07" },
+      { company: "烽火虹信", title: "研发工程师/技术组长", period: "2009.07 - 2013.11" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2016.07 至今任职，与刘峰同在华为" }
+    ]
+  },
+  "吴显": {
+    company: "华为", title: "终端产品总监", city: "上海", years: "20年+", age: 41,
+    school: "中南民族大学", degree: "本科", major: "电子信息工程",
+    highlight: "鸿蒙大桌面全体系奠基人，华为第一代纯血鸿蒙产品总监，20+千人月级项目群管理专家（简历名Asher）",
+    education: [
+      { school: "中南民族大学", major: "电子信息工程", degree: "本科", period: "2001.09 - 2005.06" }
+    ],
+    work: [
+      { company: "华为终端", title: "产品总监/AI场景规划6级专家", period: "2018.09 - 至今" },
+      { company: "华为网络产品线", title: "项目XM/核心架构师/5级首席网络安全官", period: "2006.12 - 2018.09" },
+      { company: "南京海励能电子", title: "硬件工程师/架构师", period: "2005.01 - 2006.12" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2006.12 至今任职，与刘峰同在华为" }
+    ]
+  },
+  "吴浩然": {
+    company: "华为", title: "智选车产品总监", city: "深圳", years: "10年+", age: 37,
+    school: "华中科技大学", degree: "本科", major: "电子信息工程",
+    highlight: "华为智选车产品总监（18级），熟悉IPD流程，有公司变革经历",
+    education: [
+      { school: "华中科技大学", major: "电子信息工程", degree: "本科", period: "2007 - 2011" }
+    ],
+    work: [
+      { company: "华为技术有限公司（智选车产品部）", title: "产品总监（18级）", period: "2014 - 至今" },
+      { company: "某头部医疗器械公司", title: "软件研发工程师", period: "2011 - 2014" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2014 至今任职，与刘峰同在华为" }
+    ]
+  },
+  "陈谭坤": {
+    company: "华为", title: "鸿蒙手机系统架构师", city: "深圳", years: "16年", age: 40,
+    school: "西北工业大学", degree: "硕士", major: "软件工程",
+    highlight: "华为鸿蒙手机系统架构师，负责第一代车机系统，目前带15人团队",
+    education: [
+      { school: "西北工业大学", major: "软件工程", degree: "硕士", period: "2007 - 2010" },
+      { school: "南昌大学", major: "计算机", degree: "本科", period: "2003 - 2007" }
+    ],
+    work: [
+      { company: "华为技术有限公司", title: "鸿蒙手机系统架构师", period: "2022 - 至今" },
+      { company: "华为技术有限公司", title: "安卓生态系统架构师（第一代车机系统）", period: "2017 - 2022" },
+      { company: "华为技术有限公司", title: "ICT路由器SE", period: "2014 - 2017" },
+      { company: "中兴通信股份有限公司", title: "系统架构TL", period: "2010 - 2014" }
+    ],
+    otherRelations: [
+      { type: "同事", detail: "华为 2014 至今任职，与刘峰同在华为" }
+    ]
+  }
+};
+const INFORMANT_PROFILE = { "刘峰": { company: "华为", title: "产品总监", school: "中国地质大学" } };
 
 let chart = echarts.init(document.getElementById("chart"), "dark");
 let currentPerson = null;
@@ -268,18 +429,18 @@ let activeTags = [];
 let pathHighlightNodes = null;
 
 // ====== Pre-computations ======
-let NODE_DEGREES = {};
+const NODE_DEGREES = {};
 ALL_EDGES.forEach(function(e) {
   NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
   NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
 });
-let MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
+const MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
 
 // Top 10 key nodes
-let TOP_KEY_NODES = Object.entries(NODE_DEGREES)
+const TOP_KEY_NODES = Object.entries(NODE_DEGREES)
   .sort(function(a,b) { return b[1] - a[1]; })
   .slice(0, 10);
-let KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
+const KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
 
 function nodeSizeByDegree(name) {
   var deg = NODE_DEGREES[name] || 1;
@@ -295,14 +456,11 @@ ALL_EDGES.forEach(function(e) {
   var rev = {source: e.target, target: e.source, type: e.type};
   if (e.company) rev.company = e.company;
   if (e.school) rev.school = e.school;
-  if (e.department) rev.department = e.department;
-  if (e.major) rev.major = e.major;
-  if (e.overlap) rev.overlap = e.overlap;
   adjacency[e.target].push(rev);
 });
 
 // Build full adjacency map (for BFS)
-let adjMap = {};
+const adjMap = {};
 ALL_EDGES.forEach(function(e, idx) {
   if (!adjMap[e.source]) adjMap[e.source] = [];
   if (!adjMap[e.target]) adjMap[e.target] = [];
@@ -311,7 +469,7 @@ ALL_EDGES.forEach(function(e, idx) {
 });
 
 // Collect all tags
-let allTags = {};
+const allTags = {};
 Object.values(ALL_NODES).forEach(function(n) {
   if (n.tags) {
     n.tags.split(",").forEach(function(t) {
@@ -327,8 +485,8 @@ function parseCompanyList(companyStr) {
   return companyStr.split(/[、,，]/).map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
-let companyPeople = {};
-let schoolPeople = {};
+const companyPeople = {};
+const schoolPeople = {};
 Object.entries(ALL_NODES).forEach(function(entry) {
   var name = entry[0], info = entry[1];
   parseCompanyList(info.company).forEach(function(c) {
@@ -360,11 +518,14 @@ function switchSidebarTab(tab) {
   ['path-finder','compare-panel','tag-filter','stats-panel'].forEach(function(id) {
     document.getElementById(id).classList.remove('visible');
   });
+  document.getElementById('referral-panel').style.display = 'none';
   
   if (tab === 'path') document.getElementById('path-finder').classList.add('visible');
   if (tab === 'compare') document.getElementById('compare-panel').classList.add('visible');
   if (tab === 'tags') { document.getElementById('tag-filter').classList.add('visible'); renderTagList(); }
   if (tab === 'stats') { document.getElementById('stats-panel').classList.add('visible'); renderStats(); }
+  if (tab === 'referral') { document.getElementById('referral-panel').style.display = ''; renderReferralOverview(); }
+  document.getElementById('person-detail').style.display = (tab === 'referral') ? 'none' : '';
 }
 
 // ====== Tag Filter ======
@@ -474,7 +635,7 @@ function highlightByTag(tags) {
   var chartEdges = relevantEdges.map(function(e) {
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#444',
         width: (matchedSet.has(e.source) && matchedSet.has(e.target)) ? 2 : 1,
@@ -484,17 +645,21 @@ function highlightByTag(tags) {
     };
   });
   
+  // 边按类型排序：强相关最后渲染显示在最上层
+  var typeOrder = { 'shared_school': 0, 'shared_company': 1, 'classmate': 2, 'weak_colleague': 3, 'strong_colleague': 4 };
+  chartEdges.sort(function(a, b) { return (typeOrder[a._type] || 0) - (typeOrder[b._type] || 0); });
+  
   chart.setOption({
     backgroundColor: '#0f0f23',
     tooltip: buildTooltip(),
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 300, gravity: 0.1, edgeLength: [80, 200], friction: 0.6 },
+      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [{ name: 'matched', itemStyle: { color: '#667eea' } }]
     }]
-  }, true);
+  }, false);
   
   var resultHtml = '<b style="color:#667eea">' + tags.join(' + ') + '</b> 相关人才: ' + matchedNames.length + '人<br>';
   matchedNames.slice(0, 20).forEach(function(n) {
@@ -575,7 +740,7 @@ function findPath() {
   
   pathHighlightNodes = found.path;
   
-  var html = '<div style="color:#4ecdc4;margin-bottom:4px;">&#9989; 找到路径! 距离: ' + (found.path.length - 1) + ' 步</div>';
+  var html = '<div style="color:#6bcf7f;margin-bottom:4px;">&#9989; 找到路径! 距离: ' + (found.path.length - 1) + ' 步</div>';
   html += '<div style="line-height:1.8;">';
   found.path.forEach(function(name, i) {
     html += '<span class="timeline-person" data-person="' + escName(name) + '">' + name + '</span>';
@@ -583,9 +748,8 @@ function findPath() {
       var e = found.edges[i];
       var color = EDGE_COLORS[e.type] || '#888';
       var detail = EDGE_LABELS[e.type] || e.type;
-      if (e.company) detail += '(' + e.company + (e.department ? '·' + e.department : '') + ')';
-      if (e.school) detail += '(' + e.school + (e.major ? '·' + e.major : '') + ')';
-      if (e.overlap) detail += ' ' + e.overlap;
+      if (e.company) detail += '(' + e.company + ')';
+      if (e.school) detail += '(' + e.school + ')';
       html += ' <span style="color:' + color + ';font-size:10px;">&#8594;' + detail + '&#8594;</span> ';
     }
   });
@@ -640,7 +804,7 @@ function highlightPath(pathNodes, pathEdges) {
     var isPathEdge = edgeKeys.has(e.source + '|' + e.target);
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
       lineStyle: {
         color: isPathEdge ? (EDGE_COLORS[e.type] || '#667eea') : '#222',
         width: isPathEdge ? 4 : 0.5,
@@ -660,7 +824,7 @@ function highlightPath(pathNodes, pathEdges) {
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [{ name: '路径', itemStyle: { color: '#ffd700' } }]
     }]
-  }, true);
+  }, false);
 }
 
 // ====== Compare ======
@@ -1055,6 +1219,7 @@ function renderWelcome() {
 function renderFullNetwork() {
   var overlay = document.getElementById('welcome-overlay');
   if (overlay) overlay.style.display = 'none';
+  updateReferralFilterBtn(null);
   var topNodes = Object.entries(NODE_DEGREES)
     .sort(function(a,b) { return b[1] - a[1]; })
     .slice(0, 80)
@@ -1090,15 +1255,19 @@ function renderFullNetwork() {
   var chartEdges = relevantEdges.map(function(e) {
     return {
       source: e.source, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#333',
-        width: e.type === 'strong_colleague' ? 1.5 : 0.8,
+        width: e.type === 'strong_colleague' ? 2 : 0.8,
         curveness: 0.15,
-        opacity: 0.25
+        opacity: e.type === 'strong_colleague' ? 0.5 : 0.2
       }
     };
   });
+  
+  // 强相关边最后渲染，显示在最上层
+  var typeOrder = { 'shared_school': 0, 'shared_company': 1, 'classmate': 2, 'weak_colleague': 3, 'strong_colleague': 4 };
+  chartEdges.sort(function(a, b) { return (typeOrder[a._type] || 0) - (typeOrder[b._type] || 0); });
   
   chart.setOption({
     backgroundColor: '#0f0f23',
@@ -1106,14 +1275,14 @@ function renderFullNetwork() {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 800, gravity: 0.05, edgeLength: [120, 350], friction: 0.6 },
+      force: { repulsion: 1000, gravity: 0.04, edgeLength: [150, 400], friction: 0.5 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 }, label: { show: true, fontSize: 13, color: '#fff' } },
       categories: [
         { name: '人才', itemStyle: { color: '#667eea' } },
         { name: '核心人才', itemStyle: { color: '#ffd700' } }
       ]
     }]
-  }, true);
+  }, false);
 }
 
 // ====== Tooltip Builder ======
@@ -1142,9 +1311,6 @@ function buildTooltip() {
           tip += '<b>' + (EDGE_LABELS[d._type] || d._type) + '</b>';
           if (d._company) tip += '<br/>公司: ' + d._company;
           if (d._school) tip += '<br/>学校: ' + d._school;
-          if (d._department) tip += '<br/>部门: ' + d._department;
-          if (d._major) tip += '<br/>专业: ' + d._major;
-          if (d._overlap) tip += '<br/>交叉时间: ' + d._overlap;
           tip += '<br/>' + d.source + ' ↔ ' + d.target;
         } else {
           tip = d.source + ' ↔ ' + d.target;
@@ -1154,6 +1320,137 @@ function buildTooltip() {
       return '';
     }
   };
+}
+
+// ====== Referral Overview ======
+function renderReferralOverview() {
+  var html = '<div style="font-size:13px;color:#f0a500;margin-bottom:10px;font-weight:600;">&#129309; 线人推荐网络</div>';
+  html += '<div style="font-size:11px;color:#888;margin-bottom:12px;">共 ' + INFORMANTS.length + ' 位线人 · 点卡片展开推荐名单，点人名看完整履历。</div>';
+
+  INFORMANTS.forEach(function(inf, idx) {
+    var info = ALL_NODES[inf] || {};
+    var referrals = REFERRAL_DATA[inf] || [];
+    var withDetail = referrals.filter(function(n) { return !!RECOMMENDED_DETAILS[n]; }).length;
+    var inGraphCount = referrals.filter(function(n) { return !!ALL_NODES[n]; }).length;
+    var expanded = (INFORMANTS.length === 1); // 只有1个线人时默认展开
+
+    html += '<div class="informant-card">';
+    // 卡片头：可点击折叠/展开
+    html += '<div class="inf-header" onclick="toggleReferralList(' + idx + ')">';
+    html += '<span class="inf-arrow" id="ref-arrow-' + idx + '">' + (expanded ? '&#9660;' : '&#9654;') + '</span>';
+    html += '<span style="font-size:15px;font-weight:700;color:#f0a500;">' + inf + '</span>';
+    html += '<span style="font-size:11px;color:#888;">' + (info.company || '') + '</span>';
+    html += '<span style="margin-left:auto;font-size:11px;color:#f0a500;white-space:nowrap;">推荐 ' + referrals.length + ' 人</span>';
+    html += '</div>';
+    html += '<div style="font-size:10px;color:#666;margin:0 0 8px 20px;">&#128196; ' + withDetail + ' 人有履历 · &#128376;&#65039; ' + inGraphCount + ' 人已入图谱</div>';
+    // 查看网络图按钮（明显样式）
+    html += '<div class="goto-person-btn" onclick="showPerson(\'' + escName(inf) + '\')">&#128376;&#65039; 查看 ' + inf + ' 的人脉网络</div>';
+
+    // 被推荐人列表（可折叠）
+    html += '<div id="ref-list-' + idx + '" style="display:' + (expanded ? 'block' : 'none') + ';">';
+    referrals.forEach(function(n) {
+      var d = RECOMMENDED_DETAILS[n];
+      var inGraph = !!ALL_NODES[n];
+      var badges = '';
+      if (d && d.otherRelations && d.otherRelations.length > 0) {
+        d.otherRelations.forEach(function(rel) {
+          var cls = rel.type === '同事' ? 'colleague' : (rel.type === '同学' ? 'classmate' : 'none');
+          badges += '<span class="relation-badge ' + cls + '">' + rel.type + '</span>';
+        });
+      }
+      var statusBadge = d ? '<span class="referral-badge">履历</span>' : '';
+      var graphBadge = inGraph ? '<span class="referral-badge in-graph">图谱</span>' : '<span class="ghost-node-indicator"></span>';
+      var subInfo = d ? (d.company + ' · ' + d.title) : '暂无履历';
+      html += '<div class="referral-person" style="cursor:pointer;" onclick="showRecommendedDetail(\'' + escName(n) + '\')">';
+      html += graphBadge + '<span style="color:' + (d ? '#e8e8e8' : '#999') + ';font-weight:' + (d ? '600' : '400') + ';">' + n + '</span>';
+      html += '<span style="color:#666;font-size:10px;margin-left:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + subInfo + '</span>';
+      html += badges + statusBadge;
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  document.getElementById('referral-content').innerHTML = html;
+}
+
+function toggleReferralList(idx) {
+  var list = document.getElementById('ref-list-' + idx);
+  var arrow = document.getElementById('ref-arrow-' + idx);
+  if (!list) return;
+  var show = list.style.display === 'none';
+  list.style.display = show ? 'block' : 'none';
+  if (arrow) arrow.innerHTML = show ? '&#9660;' : '&#9654;';
+}
+
+// ====== 被推荐人详情弹窗 ======
+function closeRecommendedDetail() {
+  document.getElementById('rec-modal').style.display = 'none';
+  document.getElementById('rec-modal-mask').style.display = 'none';
+}
+
+function showRecommendedDetail(name) {
+  var d = RECOMMENDED_DETAILS[name];
+  var inGraph = !!ALL_NODES[name];
+  var infName = INFORMANTS.find(function(inf) { return REFERRAL_DATA[inf] && REFERRAL_DATA[inf].indexOf(name) !== -1; }) || '';
+  var infInfo = INFORMANT_PROFILE[infName] || {};
+
+  var html = '<div class="rec-modal-header">';
+  html += '<div><div class="rec-modal-title">' + name + '</div>';
+  if (d) {
+    html += '<div class="rec-modal-sub">' + (d.company || '') + ' · ' + (d.title || '') + ' · ' + (d.city || '');
+    if (d.age) html += ' · ' + d.age + '岁';
+    html += '<br/>' + (d.school || '') + ' ' + (d.degree || '') + ' ' + (d.major || '');
+    if (d.years) html += ' · 工作' + d.years;
+    html += '</div>';
+  } else {
+    html += '<div class="rec-modal-sub">基本信息待补充</div>';
+  }
+  html += '</div><div class="rec-modal-close" onclick="closeRecommendedDetail()">&times;</div></div>';
+
+  // 关系分析区
+  html += '<div class="rec-section"><div class="rec-section-title">&#129309; 与推荐人的关系</div>';
+  html += '<div style="margin-bottom:6px;"><span class="relation-badge referral">推荐</span><span style="font-size:12px;color:#bbb;">由 <b style="color:#f0a500;cursor:pointer;" onclick="closeRecommendedDetail();showPerson(\'' + escName(infName) + '\')">' + infName + '</b>' + (infInfo.title ? '（' + (infInfo.company || '') + ' ' + infInfo.title + '）' : '') + ' 推荐</span></div>';
+  if (d && d.otherRelations && d.otherRelations.length > 0) {
+    d.otherRelations.forEach(function(rel) {
+      var cls = rel.type === '同事' ? 'colleague' : (rel.type === '同学' ? 'classmate' : 'none');
+      html += '<div style="margin-bottom:4px;"><span class="relation-badge ' + cls + '">' + rel.type + '</span><span style="font-size:12px;color:#bbb;">' + rel.detail + '</span></div>';
+    });
+  } else {
+    html += '<div><span class="relation-badge none">其他关系</span><span style="font-size:12px;color:#777;">除推荐外暂未发现同事/同学等其他关系</span></div>';
+  }
+  html += '</div>';
+
+  if (d) {
+    if (d.highlight) {
+      html += '<div class="rec-section"><div class="rec-section-title">&#11088; 核心亮点</div><div class="rec-highlight">' + d.highlight + '</div></div>';
+    }
+    if (d.education && d.education.length > 0) {
+      html += '<div class="rec-section"><div class="rec-section-title">&#127891; 教育经历</div>';
+      d.education.forEach(function(e) {
+        html += '<div class="rec-row"><span class="r-main">' + e.school + '</span><span class="r-sub">' + (e.degree || '') + ' · ' + (e.major || '') + '</span><span class="r-period">' + e.period + '</span></div>';
+      });
+      html += '</div>';
+    }
+    if (d.work && d.work.length > 0) {
+      html += '<div class="rec-section"><div class="rec-section-title">&#128188; 工作经历</div>';
+      d.work.forEach(function(w) {
+        html += '<div class="rec-row"><span class="r-main">' + w.company + '</span><span class="r-sub">' + (w.title || '') + '</span><span class="r-period">' + w.period + '</span></div>';
+      });
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="rec-empty">&#128221; 暂无详细履历信息<br/>补充该人才的简历后，此处将展示教育背景、工作经历和与推荐人的关系分析。</div>';
+  }
+
+  if (inGraph) {
+    html += '<div style="text-align:center;margin-top:8px;"><span class="rec-goto-graph" onclick="closeRecommendedDetail();showPerson(\'' + escName(name) + '\')">&#128376;&#65039; 在网络图中查看 ' + name + '</span></div>';
+  }
+
+  document.getElementById('rec-modal-body').innerHTML = html;
+  document.getElementById('rec-modal-mask').style.display = 'block';
+  document.getElementById('rec-modal').style.display = 'block';
 }
 
 // ====== Main: showPerson & renderChart ======
@@ -1183,7 +1480,21 @@ function showPerson(name) {
   if (info.edu) html += '<div class="detail-row"><span class="detail-label">学历</span><span class="detail-value">' + info.edu + '</span></div>';
   if (info.tags) html += '<div class="detail-row"><span class="detail-label">技能</span><span class="detail-value">' + info.tags + '</span></div>';
   html += '<div class="detail-row"><span class="detail-label">连接数</span><span class="detail-value" style="color:#667eea;font-weight:700;">' + (NODE_DEGREES[name] || 0) + '</span></div>';
-  
+
+  // ====== 被推荐信息（该人被某线人推荐） ======
+  if (typeof INFORMANTS !== 'undefined') {
+    var referrer = INFORMANTS.find(function(inf) { return REFERRAL_DATA[inf] && REFERRAL_DATA[inf].indexOf(name) !== -1; });
+    if (referrer) {
+      html += '<div style="margin-top:10px;padding:8px 10px;background:rgba(240,165,0,0.08);border-left:3px solid #f0a500;border-radius:0 6px 6px 0;">';
+      html += '<div style="font-size:12px;color:#f0a500;font-weight:600;margin-bottom:3px;">&#129309; 线人推荐</div>';
+      html += '<div style="font-size:12px;color:#bbb;">由 <span style="color:#f0a500;cursor:pointer;font-weight:600;" onclick="showPerson(\'' + escName(referrer) + '\')">' + referrer + '</span> 推荐';
+      if (typeof RECOMMENDED_DETAILS !== 'undefined' && RECOMMENDED_DETAILS[name]) {
+        html += ' · <span style="color:#4ecdc4;cursor:pointer;text-decoration:underline;" onclick="showRecommendedDetail(\'' + escName(name) + '\')">查看完整履历</span>';
+      }
+      html += '</div></div>';
+    }
+  }
+
   // Action buttons
   html += '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">';
   html += '<button class="action-compare-btn" data-person="' + escName(name) + '" style="padding:4px 10px;border:1px solid #4ecdc4;border-radius:4px;background:transparent;color:#4ecdc4;cursor:pointer;font-size:11px;">&#9878;&#65039; 加入对比</button>';
@@ -1198,29 +1509,16 @@ function showPerson(name) {
   
   html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
   html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关系网络</div>';
-  var typeDisplayOrder = ['strong_colleague', 'classmate', 'weak_colleague', 'shared_company', 'shared_school'];
-  typeDisplayOrder.forEach(function(type) {
-    if (typeCounts[type]) {
-      html += '<div class="detail-row"><span class="detail-label" style="color:' + EDGE_COLORS[type] + '">' + EDGE_LABELS[type] + '</span><span class="detail-value">' + typeCounts[type] + '人</span></div>';
-    }
+  Object.entries(typeCounts).forEach(function(entry) {
+    var type = entry[0], count = entry[1];
+    html += '<div class="detail-row"><span class="detail-label" style="color:' + EDGE_COLORS[type] + '">' + EDGE_LABELS[type] + '</span><span class="detail-value">' + count + '人</span></div>';
   });
   html += '</div>';
   
-  // List connected people - 按关系类型排序
+  // List connected people
   var connectedSet = new Set();
-  var connTypeMap = {};
-  conns.forEach(function(e) { 
-    connectedSet.add(e.target);
-    connTypeMap[e.target] = e.type;
-  });
+  conns.forEach(function(e) { connectedSet.add(e.target); });
   var connected = Array.from(connectedSet);
-  // 排序优先级：strong_colleague > classmate > weak_colleague > shared_company > shared_school
-  var typeOrder = { 'strong_colleague': 1, 'classmate': 2, 'weak_colleague': 3, 'shared_company': 4, 'shared_school': 5 };
-  connected.sort(function(a, b) {
-    var oa = typeOrder[connTypeMap[a]] || 99;
-    var ob = typeOrder[connTypeMap[b]] || 99;
-    return oa - ob;
-  });
   
   html += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;">';
   html += '<div style="font-size:13px;color:#888;margin-bottom:8px;">关联人才 (' + connected.length + '人)</div>';
@@ -1229,24 +1527,42 @@ function showPerson(name) {
     var connEdge = conns.find(function(e) { return e.target === cn; });
     var color = connEdge ? EDGE_COLORS[connEdge.type] : '#888';
     var isKey = KEY_NODE_SET.has(cn);
-    // 构建交叉信息摘要
-    var overlapInfo = '';
-    if (connEdge) {
-      var parts = [];
-      if (connEdge.company) parts.push(connEdge.company + (connEdge.department ? '·' + connEdge.department : ''));
-      if (connEdge.school) parts.push(connEdge.school + (connEdge.major ? '·' + connEdge.major : ''));
-      if (connEdge.overlap) parts.push(connEdge.overlap);
-      if (parts.length > 0) overlapInfo = ' | ' + parts.join(' | ');
-    }
     html += '<div class="result-item conn-person-item" data-person="' + escName(cn) + '" style="padding:6px 0;border:none;">';
     html += '<span class="name" style="color:' + color + '">' + cn + (isKey ? ' &#9733;' : '') + '</span>';
     if (ci) {
-      html += '<span class="info">' + (ci.company || '') + ' ' + (ci.title || '') + overlapInfo + '</span>';
+      html += '<span class="info">' + (ci.company || '') + ' ' + (ci.title || '') + '</span>';
     }
     html += '</div>';
   });
   if (connected.length > 30) html += '<div style="color:#666;font-size:12px;padding:4px 0;">...还有 ' + (connected.length - 30) + ' 人</div>';
   html += '</div>';
+  
+  // ====== 线人推荐人脉 section ======
+  if (INFORMANTS.indexOf(name) !== -1 && REFERRAL_DATA[name]) {
+    var referrals = REFERRAL_DATA[name];
+
+    html += '<div style="margin-top:12px;border-top:1px solid rgba(240,165,0,0.3);padding-top:12px;">';
+    html += '<div style="font-size:13px;color:#f0a500;margin-bottom:8px;font-weight:600;">&#129309; 推荐人脉 (' + referrals.length + '人)</div>';
+
+    referrals.forEach(function(rn) {
+      var d = RECOMMENDED_DETAILS[rn];
+      var inGraph = !!ALL_NODES[rn];
+      var badges = '';
+      if (d && d.otherRelations && d.otherRelations.length > 0) {
+        d.otherRelations.forEach(function(rel) {
+          var cls = rel.type === '同事' ? 'colleague' : (rel.type === '同学' ? 'classmate' : 'none');
+          badges += '<span class="relation-badge ' + cls + '">' + rel.type + '</span>';
+        });
+      }
+      var graphBadge = inGraph ? '<span class="referral-badge in-graph">图谱</span>' : '<span class="ghost-node-indicator"></span>';
+      var subInfo = d ? (d.company || '') : '';
+      html += '<div class="referral-person" style="cursor:pointer;" onclick="showRecommendedDetail(\'' + escName(rn) + '\')">';
+      html += graphBadge + '<span style="color:' + (d ? '#e8e8e8' : '#999') + ';">' + rn + '</span>';
+      html += '<span style="color:#666;font-size:10px;margin-left:4px;flex:1;">' + subInfo + '</span>' + badges;
+      html += '</div>';
+    });
+    html += '</div>';
+  }
   
   detail.innerHTML = html;
   
@@ -1265,9 +1581,24 @@ function setPathPerson(slot, name) {
   switchSidebarTab('path');
 }
 
+function updateReferralFilterBtn(centerName) {
+  var btn = document.querySelector('.ctrl-btn[data-filter="referral"]');
+  if (!btn) return;
+  var isInformant = centerName && typeof INFORMANTS !== 'undefined' && INFORMANTS.indexOf(centerName) !== -1;
+  btn.style.display = isInformant ? '' : 'none';
+  // 切到非线人时，若当前正停在推荐筛选上，重置为全部
+  if (!isInformant && currentFilter === 'referral') {
+    currentFilter = 'all';
+    document.querySelectorAll('.ctrl-btn').forEach(function(b) { b.classList.remove('active'); });
+    var allBtn = document.querySelector('.ctrl-btn[data-filter="all"]');
+    if (allBtn) allBtn.classList.add('active');
+  }
+}
+
 function renderChart(centerName) {
   var overlay = document.getElementById('welcome-overlay');
   if (overlay) overlay.style.display = 'none';
+  updateReferralFilterBtn(centerName);
   var conns = adjacency[centerName] || [];
   var filtered = currentFilter === 'all' ? conns : conns.filter(function(e) { return e.type === currentFilter; });
   
@@ -1326,12 +1657,15 @@ function renderChart(centerName) {
   var chartEdges = filtered.map(function(e) {
     return {
       source: centerName, target: e.target,
-      _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
+      _type: e.type, _company: e.company || null, _school: e.school || null,
+      symbol: e.type === 'referral' ? ['none', 'arrow'] : undefined,
+      symbolSize: e.type === 'referral' ? [6, 8] : undefined,
       lineStyle: {
         color: EDGE_COLORS[e.type] || '#666',
         width: e.type === 'strong_colleague' ? 3 : (e.type === 'weak_colleague' ? 2 : 1.5),
         curveness: 0.2,
-        opacity: 0.85
+        opacity: 0.85,
+        type: e.type === 'referral' ? 'dashed' : 'solid'
       },
       label: { show: false }
     };
@@ -1350,7 +1684,7 @@ function renderChart(centerName) {
           addedEdgeKeys.add(edgeKey);
           chartEdges.push({
             source: cn, target: e.target,
-            _type: e.type, _company: e.company || null, _school: e.school || null, _department: e.department || null, _major: e.major || null, _overlap: e.overlap || null,
+            _type: e.type, _company: e.company || null, _school: e.school || null,
             lineStyle: {
               color: EDGE_COLORS[e.type] || '#444',
               width: 1,
@@ -1364,6 +1698,66 @@ function renderChart(centerName) {
     });
   });
   
+  // ====== Referral edges + ghost nodes (线人推荐) ======
+  if (INFORMANTS.indexOf(centerName) !== -1 && REFERRAL_DATA[centerName]) {
+    var showRef = (currentFilter === 'all' || currentFilter === 'referral');
+    if (showRef) {
+      var existingNames = new Set(chartNodes.map(function(n) { return n.name; }));
+      REFERRAL_DATA[centerName].forEach(function(rn) {
+        if (ALL_NODES[rn]) return; // 已入库者已由静态 referral 边连接，跳过避免重复边
+        if (!existingNames.has(rn)) {
+          {
+            // 未入库：幽灵节点（虚框）
+            chartNodes.push({
+              name: rn,
+              symbolSize: 22,
+              value: 0,
+              itemStyle: {
+                color: 'rgba(240,165,0,0.15)',
+                borderColor: '#f0a500',
+                borderWidth: 1,
+                borderType: 'dashed',
+                shadowBlur: 8,
+                shadowColor: 'rgba(240,165,0,0.2)'
+              },
+              label: {
+                show: true, fontSize: 10, fontWeight: '600',
+                color: '#f0a500',
+                textBorderColor: 'rgba(0,0,0,0.6)', textBorderWidth: 1,
+                position: 'right'
+              },
+              category: 0
+            });
+          }
+          existingNames.add(rn);
+        }
+        // Referral edge — 金色点划线 + 方向箭头（线人→被推荐人）
+        chartEdges.push({
+          source: centerName, target: rn,
+          _type: 'referral', _company: null, _school: null,
+          symbol: ['none', 'arrow'],
+          symbolSize: [6, 8],
+          lineStyle: {
+            color: '#f0a500',
+            width: 2,
+            curveness: 0.15,
+            opacity: 0.8,
+            type: 'dashed'
+          },
+          emphasis: {
+            lineStyle: { width: 3, opacity: 1 },
+            label: { show: false }
+          },
+          label: { show: false }
+        });
+      });
+    }
+  }
+  
+  // 边按类型优先级排序：referral 和 strong_colleague 最后渲染（显示在最上层）
+  var typeOrder = { 'weak_colleague': 0, 'classmate': 1, 'shared_company': 2, 'shared_school': 3, 'strong_colleague': 4, 'referral': 5 };
+  chartEdges.sort(function(a, b) { return (typeOrder[a._type] || 0) - (typeOrder[b._type] || 0); });
+  
   var option = {
     backgroundColor: '#0f0f23',
     tooltip: buildTooltip(),
@@ -1374,20 +1768,20 @@ function renderChart(centerName) {
       links: chartEdges,
       roam: true,
       draggable: true,
-      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
+      force: { repulsion: 600, gravity: 0.08, edgeLength: [150, 300], friction: 0.5 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [
         { name: '中心', itemStyle: { color: '#667eea' } },
         { name: '强相关', itemStyle: { color: '#ff6b6b' } },
         { name: '弱相关', itemStyle: { color: '#ffd93d' } },
-        { name: '同学', itemStyle: { color: '#4ecdc4' } },
+        { name: '同学', itemStyle: { color: '#6bcf7f' } },
         { name: '同公司', itemStyle: { color: '#4ecdc4' } },
         { name: '同学校', itemStyle: { color: '#a78bfa' } }
       ]
     }]
   };
   
-  chart.setOption(option, true);
+  chart.setOption(option, false);
   
   document.getElementById('sidebar-footer').innerHTML =
     '当前: ' + centerName + ' | 显示 ' + connectedNames.length + ' 个关联 / 总计 ' + allNames.length + ' 节点 / ' + chartEdges.length + ' 条边';
@@ -1397,7 +1791,7 @@ function getCategory(name) {
   var conns = adjacency[currentPerson] || [];
   var edge = conns.find(function(e) { return e.target === name; });
   if (!edge) return 0;
-  var typeMap = { 'strong_colleague': 1, 'classmate': 2, 'weak_colleague': 3, 'shared_company': 4, 'shared_school': 5 };
+  var typeMap = { 'strong_colleague': 1, 'weak_colleague': 2, 'classmate': 3, 'shared_company': 4, 'shared_school': 5 };
   return typeMap[edge.type] || 0;
 }
 
@@ -1683,116 +2077,23 @@ document.getElementById('view-filter-input').addEventListener('keydown', functio
 
 // ====== Click on chart node ======
 chart.on('click', function(params) {
-  if (params.dataType === 'node' && params.name && ALL_NODES[params.name]) {
-    showPerson(params.name);
+  if (params.dataType === 'node' && params.name) {
+    if (ALL_NODES[params.name]) {
+      showPerson(params.name);
+    } else if (typeof REFERRAL_DATA !== 'undefined' && INFORMANTS.some(function(inf) { return REFERRAL_DATA[inf] && REFERRAL_DATA[inf].indexOf(params.name) !== -1; })) {
+      showRecommendedDetail(params.name);
+    }
   }
 });
 
 // ====== Responsive ======
 window.addEventListener('resize', function() { chart.resize(); });
+window.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeRecommendedDetail(); });
 
 // ====== Initial render ======
-// ====== Load data dynamically ======
-fetch('graph_data.json?t=' + Date.now())
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    ALL_NODES = data.nodes || {};
-    ALL_EDGES = data.edges || [];
-    // 兼容旧格式：将 label 字段转换为 company/school
-    ALL_EDGES.forEach(function(e) {
-      if (e.label && !e.company && !e.school) {
-        if (e.type === 'shared_company') e.company = e.label;
-        else if (e.type === 'shared_school') e.school = e.label;
-      }
-    });
-    console.log('Loaded: ' + Object.keys(ALL_NODES).length + ' nodes, ' + ALL_EDGES.length + ' edges');
-    
-    // Recompute degrees
-    NODE_DEGREES = {};
-    ALL_EDGES.forEach(function(e) {
-      NODE_DEGREES[e.source] = (NODE_DEGREES[e.source] || 0) + 1;
-      NODE_DEGREES[e.target] = (NODE_DEGREES[e.target] || 0) + 1;
-    });
-    
-    // Recompute MAX_DEGREE
-    MAX_DEGREE = Math.max.apply(null, Object.values(NODE_DEGREES).concat([1]));
-    
-    // Recompute TOP_KEY_NODES and KEY_NODE_SET
-    TOP_KEY_NODES = Object.entries(NODE_DEGREES)
-      .sort(function(a,b) { return b[1] - a[1]; })
-      .slice(0, 10);
-    KEY_NODE_SET = new Set(TOP_KEY_NODES.map(function(n) { return n[0]; }));
-    
-    // Rebuild adjacency
-    for (var k in adjacency) delete adjacency[k];
-    ALL_EDGES.forEach(function(e) {
-      if (!adjacency[e.source]) adjacency[e.source] = [];
-      if (!adjacency[e.target]) adjacency[e.target] = [];
-      adjacency[e.source].push(e);
-      var rev = {source: e.target, target: e.source, type: e.type};
-      if (e.company) rev.company = e.company;
-      if (e.school) rev.school = e.school;
-      if (e.department) rev.department = e.department;
-      if (e.major) rev.major = e.major;
-      if (e.overlap) rev.overlap = e.overlap;
-      adjacency[e.target].push(rev);
-    });
-    
-    // Rebuild adjMap (for BFS)
-    adjMap = {};
-    ALL_EDGES.forEach(function(e, idx) {
-      if (!adjMap[e.source]) adjMap[e.source] = [];
-      if (!adjMap[e.target]) adjMap[e.target] = [];
-      adjMap[e.source].push({node: e.target, edgeIdx: idx, edge: e});
-      adjMap[e.target].push({node: e.source, edgeIdx: idx, edge: e});
-    });
-    
-    // Rebuild allTags
-    allTags = {};
-    Object.values(ALL_NODES).forEach(function(n) {
-      if (n.tags) {
-        n.tags.split(",").forEach(function(t) {
-          t = t.trim();
-          if (t) allTags[t] = (allTags[t] || 0) + 1;
-        });
-      }
-    });
-    
-    // Rebuild companyPeople and schoolPeople
-    companyPeople = {};
-    schoolPeople = {};
-    Object.entries(ALL_NODES).forEach(function(entry) {
-      var name = entry[0], info = entry[1];
-      parseCompanyList(info.company).forEach(function(c) {
-        if (!companyPeople[c]) companyPeople[c] = [];
-        companyPeople[c].push(name);
-      });
-      if (info.school) {
-        var s = info.school.trim();
-        if (s) {
-          if (!schoolPeople[s]) schoolPeople[s] = [];
-          schoolPeople[s].push(name);
-        }
-      }
-    });
-    
-    // Rebuild autocomplete list
-    allNameList = Object.keys(ALL_NODES).sort();
-    
-    // Update sidebar footer
-    document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边 | &#9733; Top10 关键节点已标注';
-    
-    // Initialize UI
-    setupCompareInputs();
-    renderWelcome();
-    
-    // Force chart resize to fix rendering
-    setTimeout(function() { chart.resize(); }, 200);
-  })
-  .catch(function(err) {
-    console.error('Failed to load graph_data.json:', err);
-    document.getElementById('sidebar-footer').innerHTML = '数据加载失败，请刷新页面重试';
-  });
+document.getElementById('sidebar-footer').innerHTML = '共 ' + Object.keys(ALL_NODES).length + ' 人 / ' + ALL_EDGES.length + ' 条关系边' + (window.GRAPH_SYNCED_AT ? ' | 数据同步于 ' + window.GRAPH_SYNCED_AT : ' | 静态数据');
+setupCompareInputs();
+renderWelcome();
 </script>
 </body>
 </html>
