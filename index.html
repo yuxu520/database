@@ -655,7 +655,8 @@ function highlightByTag(tags) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [{ name: 'matched', itemStyle: { color: '#667eea' } }]
     }]
@@ -820,7 +821,8 @@ function highlightPath(pathNodes, pathEdges) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.6 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 400, gravity: 0.1, edgeLength: [100, 250], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [{ name: '路径', itemStyle: { color: '#ffd700' } }]
     }]
@@ -1079,7 +1081,8 @@ function renderCompanyView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.55 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '公司', itemStyle: { color: '#4ecdc4' } },
@@ -1154,7 +1157,8 @@ function renderSchoolView(filter) {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.55 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 1200, gravity: 0.03, edgeLength: [140, 350], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 2.5 } },
       categories: [
         { name: '学校', itemStyle: { color: '#a78bfa' } },
@@ -1275,7 +1279,8 @@ function renderFullNetwork() {
     series: [{
       type: 'graph', layout: 'force', data: chartNodes, links: chartEdges,
       roam: true, draggable: true,
-      force: { repulsion: 1000, gravity: 0.04, edgeLength: [150, 400], friction: 0.5 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 1500, gravity: 0.04, edgeLength: [150, 400], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 }, label: { show: true, fontSize: 13, color: '#fff' } },
       categories: [
         { name: '人才', itemStyle: { color: '#667eea' } },
@@ -1689,7 +1694,7 @@ function renderChart(centerName) {
               color: EDGE_COLORS[e.type] || '#444',
               width: 1,
               curveness: 0.3,
-              opacity: 0.5,
+              opacity: 0.22,
               type: 'dashed'
             }
           });
@@ -1768,7 +1773,8 @@ function renderChart(centerName) {
       links: chartEdges,
       roam: true,
       draggable: true,
-      force: { repulsion: 600, gravity: 0.08, edgeLength: [150, 300], friction: 0.5 },
+      layoutAnimation: false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 1100, gravity: 0.06, edgeLength: [150, 300], friction: 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [
         { name: '中心', itemStyle: { color: '#667eea' } },
