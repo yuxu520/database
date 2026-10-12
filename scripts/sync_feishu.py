@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-飞书多维表格 -> graph_data.json 同步脚本 v2
-增强：拉取工作经历/教育经历子表，计算交叉时间段，附加部门/专业信息到边
+飞书多维表格 -> graph_data.js 同步脚本 v4
+输出 JS 文件（window.ALL_NODES / window.ALL_EDGES），供新版网络图直接加载
+新增：读取主表「推荐人」字段，自动生成 referral 推荐边（线人 -> 被推荐人）
 """
 import os, json, random, time, sys, urllib.request, urllib.error
+from datetime import datetime
 
-APP_ID = os.environ.get('FEISHU_APP_ID', '')
-APP_SECRET = os.environ.get('FEISHU_APP_SECRET', '')
-BASE_TOKEN = os.environ.get('FEISHU_BASE_TOKEN', '')
+APP_ID = os.environ.get('FEISHU_APP_ID', 'cli_aada7ce7a4e21bee')
+APP_SECRET = os.environ.get('FEISHU_APP_SECRET', 'UOTi7iw3kkT2Nowu9LvJ8fvcUa6NY2wc')
+BASE_TOKEN = os.environ.get('FEISHU_BASE_TOKEN', 'Teb8bGpkHaU8GrsFArAcPOrxnXd')
 
 TABLES = {
     'core': 'tblWkWUNC0skgj2W',
@@ -128,155 +130,183 @@ def split_multi_value(val_str):
     return [p.strip() for p in val_str.split('|') if p.strip()]
 
 
-def ts_to_ym(ts_ms):
-    """时间戳毫秒 -> 'YYYY.MM' 格式字符串"""
-    if not ts_ms:
+def ts_to_date_str(ts):
+    """将毫秒时间戳转为 'YYYY.MM' 格式字符串"""
+    if ts is None:
         return None
     try:
-        dt = time.gmtime(ts_ms / 1000)
-        return f'{dt.tm_year}.{dt.tm_mon:02d}'
-    except Exception:
+        dt = datetime.utcfromtimestamp(ts / 1000.0)
+        return f'{dt.year}.{dt.month:02d}'
+    except:
         return None
 
 
-def calc_overlap_period(start1, end1, start2, end2):
-    """计算两个时间段的重叠部分，返回 'YYYY.MM-YYYY.MM' 或 None"""
-    # start 必须有值，否则无法计算
-    if not start1 or not start2:
+def calc_overlap(start1, end1, start2, end2):
+    """
+    计算两个时间段的重叠部分
+    返回 (overlap_start_str, overlap_end_str) 或 None
+    时间戳为空（None）表示当前在职/在读，用极大值替代
+    """
+    if start1 is None or start2 is None:
         return None
-    # end 为 None 表示当前在职，用极大值替代
-    BIG = 9999999999999
-    s1, e1 = start1, end1 or BIG
-    s2, e2 = start2, end2 or BIG
-    overlap_start = max(s1, s2)
+    
+    # None 表示当前，用极大值替代
+    e1 = end1 if end1 is not None else 9999999999999
+    e2 = end2 if end2 is not None else 9999999999999
+    
+    overlap_start = max(start1, start2)
     overlap_end = min(e1, e2)
+    
     if overlap_start > overlap_end:
         return None
-    # 格式化显示
-    start_str = ts_to_ym(overlap_start)
-    if end1 is None and end2 is None:
-        end_str = '至今'
-    else:
-        actual_end = min(e1, e2)
-        if actual_end >= BIG:
-            end_str = '至今'
-        else:
-            end_str = ts_to_ym(actual_end)
-    if not start_str or not end_str:
-        return None
-    return f'{start_str}-{end_str}'
-
-
-def fetch_work_experiences(token, table_ids):
-    """拉取工作经历子表，返回 {人名: [{company, department, start, end}, ...]}"""
-    person_work = {}
-    for table_id in table_ids:
-        try:
-            records = fetch_all_records(token, table_id)
-            for rec in records:
-                fields = rec.get('fields', {})
-                name_val = fields.get('姓名')
-                if not name_val:
-                    continue
-                # 姓名字段是关联字段，格式为 [{text: "张三", record_ids: [...]}]
-                name = ''
-                if isinstance(name_val, list) and len(name_val) > 0:
-                    name = name_val[0].get('text', '').strip()
-                elif isinstance(name_val, str):
-                    name = name_val.strip()
-                if not name:
-                    continue
-                company = safe_str(fields.get('公司名称', '')).strip()
-                department = safe_str(fields.get('部门', '')).strip()
-                start = fields.get('开始日期')  # 时间戳毫秒
-                end = fields.get('结束日期')    # 时间戳毫秒，可能为空
-                # 检查是否当前在职
-                is_current = fields.get('是否当前')
-                if isinstance(is_current, list) and len(is_current) > 0:
-                    curr_text = is_current[0].get('text', '')
-                    if curr_text == '当前':
-                        end = None
-                if company:
-                    person_work.setdefault(name, []).append({
-                        'company': company,
-                        'department': department,
-                        'start': start,
-                        'end': end,
-                    })
-        except Exception as e:
-            print(f'  [WARN] 拉取工作经历表 {table_id} 失败: {e}')
-    return person_work
-
-
-def fetch_edu_experiences(token, table_ids):
-    """拉取教育经历子表，返回 {人名: [{school, major, degree, start, end}, ...]}"""
-    person_edu = {}
-    for table_id in table_ids:
-        try:
-            records = fetch_all_records(token, table_id)
-            for rec in records:
-                fields = rec.get('fields', {})
-                name_val = fields.get('姓名')
-                if not name_val:
-                    continue
-                name = ''
-                if isinstance(name_val, list) and len(name_val) > 0:
-                    name = name_val[0].get('text', '').strip()
-                elif isinstance(name_val, str):
-                    name = name_val.strip()
-                if not name:
-                    continue
-                school = safe_str(fields.get('学校名称', '')).strip()
-                major = safe_str(fields.get('专业', '')).strip()
-                degree = safe_str(fields.get('学历', '')).strip()
-                start = fields.get('开始日期')
-                end = fields.get('结束日期')
-                if school:
-                    person_edu.setdefault(name, []).append({
-                        'school': school,
-                        'major': major,
-                        'degree': degree,
-                        'start': start,
-                        'end': end,
-                    })
-        except Exception as e:
-            print(f'  [WARN] 拉取教育经历表 {table_id} 失败: {e}')
-    return person_edu
-
-
-def find_work_overlap(person_work, name1, name2):
-    """查找两人同一家公司的交叉信息，返回 {company, department, overlap} 或 None"""
-    work1 = person_work.get(name1, [])
-    work2 = person_work.get(name2, [])
-    for w1 in work1:
-        for w2 in work2:
-            if w1['company'] == w2['company']:
-                overlap = calc_overlap_period(w1['start'], w1['end'], w2['start'], w2['end'])
-                # 部门取两者的第一个非空值
-                dept = w1['department'] or w2['department'] or ''
-                return {
-                    'company': w1['company'],
-                    'department': dept,
-                    'overlap': overlap or '',
-                }
+    
+    s_str = ts_to_date_str(overlap_start)
+    e_str = ts_to_date_str(overlap_end) if overlap_end != 9999999999999 else '至今'
+    
+    if s_str and e_str:
+        return f'{s_str}-{e_str}'
     return None
 
 
-def find_edu_overlap(person_edu, name1, name2):
-    """查找两人同一学校的交叉信息，返回 {school, major, overlap} 或 None"""
-    edu1 = person_edu.get(name1, [])
-    edu2 = person_edu.get(name2, [])
+def fetch_work_experiences(token, table_id):
+    """
+    拉取工作经历子表，返回 person_work_experiences 字典
+    格式: {"人名": [{"company": "xxx", "department": "xxx", "start": ts, "end": ts}, ...]}
+    """
+    records = fetch_all_records(token, table_id)
+    result = {}
+    for rec in records:
+        fields = rec.get('fields', {})
+        # 姓名是关联字段 type=18
+        name_val = fields.get('姓名')
+        names = extract_names_from_relation(name_val)
+        if not names:
+            continue
+        name = names[0].strip()
+        if not name:
+            continue
+        
+        company = safe_str(fields.get('公司名称', ''))
+        department = safe_str(fields.get('部门', ''))
+        start_ts = fields.get('开始日期')
+        end_ts = fields.get('结束日期')
+        
+        # 时间戳可能是毫秒整数
+        if isinstance(start_ts, (int, float)) and start_ts > 0:
+            start_ts = int(start_ts)
+        else:
+            start_ts = None
+        if isinstance(end_ts, (int, float)) and end_ts > 0:
+            end_ts = int(end_ts)
+        else:
+            end_ts = None
+        
+        entry = {
+            'company': company,
+            'department': department,
+            'start': start_ts,
+            'end': end_ts,
+        }
+        
+        if name not in result:
+            result[name] = []
+        result[name].append(entry)
+    return result
+
+
+def fetch_edu_experiences(token, table_id):
+    """
+    拉取教育经历子表，返回 person_edu_experiences 字典
+    格式: {"人名": [{"school": "xxx", "major": "xxx", "degree": "xxx", "start": ts, "end": ts}, ...]}
+    """
+    records = fetch_all_records(token, table_id)
+    result = {}
+    for rec in records:
+        fields = rec.get('fields', {})
+        name_val = fields.get('姓名')
+        names = extract_names_from_relation(name_val)
+        if not names:
+            continue
+        name = names[0].strip()
+        if not name:
+            continue
+        
+        school = safe_str(fields.get('学校名称', ''))
+        major = safe_str(fields.get('专业', ''))
+        degree = safe_str(fields.get('学历', ''))
+        start_ts = fields.get('开始日期')
+        end_ts = fields.get('结束日期')
+        
+        if isinstance(start_ts, (int, float)) and start_ts > 0:
+            start_ts = int(start_ts)
+        else:
+            start_ts = None
+        if isinstance(end_ts, (int, float)) and end_ts > 0:
+            end_ts = int(end_ts)
+        else:
+            end_ts = None
+        
+        entry = {
+            'school': school,
+            'major': major,
+            'degree': degree,
+            'start': start_ts,
+            'end': end_ts,
+        }
+        
+        if name not in result:
+            result[name] = []
+        result[name].append(entry)
+    return result
+
+
+def find_work_overlap(person_work_experiences, name1, name2):
+    """
+    查找两人在工作经历中同一家公司的交叉信息
+    返回 (company, department, overlap_str) 或 None
+    """
+    works1 = person_work_experiences.get(name1, [])
+    works2 = person_work_experiences.get(name2, [])
+    
+    best = None
+    for w1 in works1:
+        for w2 in works2:
+            c1 = w1.get('company', '')
+            c2 = w2.get('company', '')
+            if c1 and c2 and (c1 == c2 or c1 in c2 or c2 in c1):
+                overlap = calc_overlap(w1.get('start'), w1.get('end'), w2.get('start'), w2.get('end'))
+                dept = w1.get('department', '') or w2.get('department', '')
+                company = c1
+                if not best:
+                    best = (company, dept, overlap)
+                elif overlap and not best[2]:
+                    # 优先有overlap的
+                    best = (company, dept, overlap)
+    return best
+
+
+def find_edu_overlap(person_edu_experiences, name1, name2):
+    """
+    查找两人在教育经历中同一所学校的交叉信息
+    返回 (school, major, overlap_str) 或 None
+    """
+    edu1 = person_edu_experiences.get(name1, [])
+    edu2 = person_edu_experiences.get(name2, [])
+    
+    best = None
     for e1 in edu1:
         for e2 in edu2:
-            if e1['school'] == e2['school']:
-                overlap = calc_overlap_period(e1['start'], e1['end'], e2['start'], e2['end'])
-                major = e1['major'] or e2['major'] or ''
-                return {
-                    'school': e1['school'],
-                    'major': major,
-                    'overlap': overlap or '',
-                }
-    return None
+            s1 = e1.get('school', '')
+            s2 = e2.get('school', '')
+            if s1 and s2 and (s1 == s2 or s1 in s2 or s2 in s1):
+                overlap = calc_overlap(e1.get('start'), e1.get('end'), e2.get('start'), e2.get('end'))
+                major = e1.get('major', '') or e2.get('major', '')
+                school = s1
+                if not best:
+                    best = (school, major, overlap)
+                elif overlap and not best[2]:
+                    best = (school, major, overlap)
+    return best
 
 
 def build_graph_data():
@@ -292,10 +322,28 @@ def build_graph_data():
     print(f'  -> {len(potential_records)} 条记录')
 
     print('[4/6] 拉取工作经历/教育经历子表...')
-    person_work = fetch_work_experiences(token, [TABLES['core_work'], TABLES['potential_work']])
-    print(f'  -> {len(person_work)} 人有工作经历')
-    person_edu = fetch_edu_experiences(token, [TABLES['core_edu'], TABLES['potential_edu']])
-    print(f'  -> {len(person_edu)} 人有教育经历')
+    # 工作经历
+    core_work_exp = fetch_work_experiences(token, TABLES['core_work'])
+    print(f'  -> 核心人才工作经历: {len(core_work_exp)} 人')
+    potential_work_exp = fetch_work_experiences(token, TABLES['potential_work'])
+    print(f'  -> 潜在人才工作经历: {len(potential_work_exp)} 人')
+    
+    # 教育经历
+    core_edu_exp = fetch_edu_experiences(token, TABLES['core_edu'])
+    print(f'  -> 核心人才教育经历: {len(core_edu_exp)} 人')
+    potential_edu_exp = fetch_edu_experiences(token, TABLES['potential_edu'])
+    print(f'  -> 潜在人才教育经历: {len(potential_edu_exp)} 人')
+    
+    # 合并工作经历和教育经历
+    person_work_experiences = {}
+    person_work_experiences.update(core_work_exp)
+    person_work_experiences.update(potential_work_exp)
+    
+    person_edu_experiences = {}
+    person_edu_experiences.update(core_edu_exp)
+    person_edu_experiences.update(potential_edu_exp)
+    
+    print(f'  -> 合计工作经历: {len(person_work_experiences)} 人, 教育经历: {len(person_edu_experiences)} 人')
 
     print('[5/6] 构建图数据...')
     nodes = {}
@@ -329,16 +377,25 @@ def build_graph_data():
         for s in split_multi_value(school):
             school_groups.setdefault(s, []).append(name)
 
+    referrals = []  # (推荐人, 被推荐人)
     for rec in core_records:
         f = rec.get('fields', {})
         f['record_id'] = rec.get('record_id', '')
         add_node(f, '核心人才')
+        nm = safe_str(f.get('姓名', '')).strip()
+        rf = safe_str(f.get('推荐人', '')).strip()
+        if nm and rf:
+            referrals.append((rf, nm))
     for rec in potential_records:
         f = rec.get('fields', {})
         f['record_id'] = rec.get('record_id', '')
         add_node(f, '潜在人才')
+        nm = safe_str(f.get('姓名', '')).strip()
+        rf = safe_str(f.get('推荐人', '')).strip()
+        if nm and rf:
+            referrals.append((rf, nm))
 
-    # 关系边（强相关/弱相关/同学）- 附加交叉信息
+    # 关系边 - 增强版：附加子表交叉信息
     relation_count = 0
     for rec in core_records:
         fields = rec.get('fields', {})
@@ -356,34 +413,47 @@ def build_graph_data():
                     if edge_key not in edge_set:
                         edge_set.add(edge_key)
                         relation_pairs.add(pair)
+                        
                         edge = {
                             'source': name,
                             'target': target,
                             'type': rf['edge_type'],
                         }
-                        # 查找交叉信息
-                        if rf['edge_type'] in ('strong_colleague', 'weak_colleague'):
-                            info = find_work_overlap(person_work, name, target)
-                            if info:
-                                edge['company'] = info['company']
-                                edge['department'] = info['department']
-                                edge['overlap'] = info['overlap']
-                        elif rf['edge_type'] == 'classmate':
-                            info = find_edu_overlap(person_edu, name, target)
-                            if info:
-                                edge['school'] = info['school']
-                                edge['major'] = info['major']
-                                edge['overlap'] = info['overlap']
+                        
+                        edge_type = rf['edge_type']
+                        if edge_type in ('strong_colleague', 'weak_colleague', 'classmate'):
+                            # 尝试查找工作经历交叉
+                            if edge_type != 'classmate':
+                                work_info = find_work_overlap(person_work_experiences, name, target)
+                                if work_info:
+                                    company, dept, overlap = work_info
+                                    if company:
+                                        edge['company'] = company
+                                    if dept:
+                                        edge['department'] = dept
+                                    if overlap:
+                                        edge['overlap'] = overlap
+                            # 尝试查找教育经历交叉
+                            if edge_type == 'classmate':
+                                edu_info = find_edu_overlap(person_edu_experiences, name, target)
+                                if edu_info:
+                                    school, major, overlap = edu_info
+                                    if school:
+                                        edge['school'] = school
+                                    if major:
+                                        edge['major'] = major
+                                    if overlap:
+                                        edge['overlap'] = overlap
+                        
                         edges.append(edge)
                         relation_count += 1
     print(f'  -> 关系边: {relation_count}')
 
-    # 同公司/同学校边 - 附加交叉信息
+    # 同公司/同学校边 - 增强版
     shared_count = 0
     def add_shared_edges(group_map, edge_type, skip_pairs=None):
         nonlocal shared_count
         skip_pairs = skip_pairs or set()
-        is_company = (edge_type == 'shared_company')
         for key, names in group_map.items():
             if len(names) < 2:
                 continue
@@ -396,31 +466,66 @@ def build_graph_data():
                     edge_key = pair + (edge_type,)
                     if edge_key not in edge_set:
                         edge_set.add(edge_key)
-                        field_val = 'company' if is_company else 'school'
                         edge = {
                             'source': sampled[i],
                             'target': sampled[j],
                             'type': edge_type,
                         }
-                        edge[field_val] = key
-                        # 查找交叉信息
-                        if is_company:
-                            info = find_work_overlap(person_work, sampled[i], sampled[j])
-                            if info:
-                                edge['department'] = info['department']
-                                edge['overlap'] = info['overlap']
-                        else:
-                            info = find_edu_overlap(person_edu, sampled[i], sampled[j])
-                            if info:
-                                edge['major'] = info['major']
-                                edge['overlap'] = info['overlap']
+                        
+                        if edge_type == 'shared_company':
+                            edge['company'] = key
+                            # 从子表查找交叉信息
+                            work_info = find_work_overlap(person_work_experiences, sampled[i], sampled[j])
+                            if work_info:
+                                _, dept, overlap = work_info
+                                if dept:
+                                    edge['department'] = dept
+                                if overlap:
+                                    edge['overlap'] = overlap
+                        elif edge_type == 'shared_school':
+                            edge['school'] = key
+                            # 从子表查找交叉信息
+                            edu_info = find_edu_overlap(person_edu_experiences, sampled[i], sampled[j])
+                            if edu_info:
+                                _, major, overlap = edu_info
+                                if major:
+                                    edge['major'] = major
+                                if overlap:
+                                    edge['overlap'] = overlap
+                        
                         edges.append(edge)
                         shared_count += 1
+
+    # 推荐边：主表「推荐人」字段 -> referral 类型边（线人 -> 被推荐人）
+    ref_count = 0
+    for ref_name, target in referrals:
+        if ref_name in nodes and target in nodes and ref_name != target:
+            pair = tuple(sorted([ref_name, target]))
+            edge_key = pair + ('referral',)
+            if edge_key not in edge_set:
+                edge_set.add(edge_key)
+                edges.append({'source': ref_name, 'target': target, 'type': 'referral', 'detail': '线人推荐'})
+                ref_count += 1
+    print(f'  -> 推荐边: {ref_count}')
+
+    # 统一边字段：overlap 时间并入 detail/major（对齐前端展示格式）
+    for edge in edges:
+        ov = edge.pop('overlap', None)
+        dept = edge.pop('department', None)
+        if ov:
+            ov_fmt = '(' + ov.replace('-', '~') + ')'
+            if edge.get('major'):
+                edge['major'] = edge['major'] + ' ' + ov_fmt
+            elif edge.get('detail'):
+                edge['detail'] = (dept + ' ' if dept else '') + ov_fmt if dept else ov_fmt
+            else:
+                edge['detail'] = (dept + ' ' if dept else '') + ov_fmt
 
     add_shared_edges(company_groups, 'shared_company', relation_pairs)
     add_shared_edges(school_groups, 'shared_school')
     print(f'  -> shared edges: {shared_count}')
 
+    print('[6/6] 完成构建')
     return {
         'nodes': nodes,
         'edges': edges,
@@ -434,8 +539,11 @@ def build_graph_data():
 if __name__ == '__main__':
     random.seed(42)
     graph = build_graph_data()
-    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'graph_data.json')
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'graph_data.js')
+    js = 'window.ALL_NODES = ' + json.dumps(graph['nodes'], ensure_ascii=False, separators=(',', ':')) + ';\n'
+    js += 'window.ALL_EDGES = ' + json.dumps(graph['edges'], ensure_ascii=False, separators=(',', ':')) + ';\n'
+    js += 'window.GRAPH_SYNCED_AT = ' + json.dumps(graph['synced_at'], ensure_ascii=False) + ';\n'
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(graph, f, ensure_ascii=False)
-    print(f'Done! {graph["count"]} nodes, {graph["edge_count"]} edges -> graph_data.json')
+        f.write(js)
+    print(f'Done! {graph["count"]} nodes, {graph["edge_count"]} edges -> graph_data.js')
     print(f'Synced at: {graph["synced_at"]}')
