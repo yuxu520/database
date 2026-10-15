@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>人才社交网络图 V2</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>if (typeof echarts === 'undefined') document.write('<script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"><\/script>');</script>
+<script>if (typeof echarts === 'undefined') document.write('<script src="https://cdn.staticfile.org/echarts/5.5.0/echarts.min.js"><\/script>');</script>
+<script>
+window.addEventListener('error', function(e) {
+  if (!document.body || document.getElementById('js-error-bar')) return;
+  var bar = document.createElement('div');
+  bar.id = 'js-error-bar';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#8b2020;color:#fff;font-size:12px;padding:6px 12px;z-index:99999;text-align:center;';
+  bar.textContent = '页面脚本出错：' + (e.message || '资源加载失败') + ' —— 请按 Ctrl+Shift+R 强制刷新；若反复出现请截图此条反馈';
+  document.body.appendChild(bar);
+});
+</script>
 <script src="graph_data.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,6 +98,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 
 /* Chart area */
 #chart-container { position:relative; flex: 1; position: relative; }
+
+#ref-stats-bar { display:none; position:absolute; top:56px; left:50%; transform:translateX(-50%); z-index:600; background:rgba(20,20,40,0.92); border:1px solid rgba(240,165,0,0.4); border-radius:20px; padding:7px 16px; font-size:12px; color:#e8d5a3; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,0.4); align-items:center; }
+#ref-stats-bar b { color:#f0a500; }
+#wall-toggle-btn { background:rgba(240,165,0,0.15); border:1px solid rgba(240,165,0,0.5); color:#f0a500; border-radius:12px; padding:3px 12px; font-size:12px; cursor:pointer; margin-left:12px; }
+#wall-toggle-btn:hover { background:rgba(240,165,0,0.3); }
+#wall-toggle-btn.active { background:#f0a500; color:#1a1a2e; font-weight:700; }
+#wall-view { display:none; position:absolute; top:0; left:0; right:0; bottom:0; z-index:550; background:#0f0f23; overflow:hidden; }
+#controls { z-index:700; }
+.wall-center-card { position:absolute; transform:translate(-50%,-50%); text-align:center; z-index:2; }
+.wall-center-circle { width:92px; height:92px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #ffd97a, #f0a500); border:3px solid #ffe9b0; box-shadow:0 0 30px rgba(240,165,0,0.55); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#3a2a00; margin:0 auto; }
+.wall-center-sub { margin-top:6px; font-size:11px; color:#d8b56a; white-space:nowrap; }
+.wall-card { position:absolute; width:104px; transform:translate(-50%,-50%); background:rgba(26,26,46,0.95); border:1px solid #3a3a55; border-radius:12px; padding:8px 6px 6px; text-align:center; cursor:pointer; transition:transform .15s, box-shadow .15s, border-color .15s; z-index:1; }
+.wall-card:hover { transform:translate(-50%,-50%) scale(1.12); border-color:#f0a500; box-shadow:0 6px 20px rgba(240,165,0,0.35); z-index:5; }
+.wall-card.bigfish { width:116px; border:1.5px solid rgba(240,165,0,0.75); box-shadow:0 0 14px rgba(240,165,0,0.25); }
+.wall-card.ghost { border-style:dashed; opacity:0.72; }
+.wall-card-name { font-size:13px; font-weight:700; color:#f2e9d0; }
+.wall-card-sub { font-size:9px; color:#9a9ab0; margin-top:3px; line-height:1.35; height:25px; overflow:hidden; }
+.wall-card-badges { margin-top:4px; min-height:13px; display:flex; justify-content:center; gap:4px; flex-wrap:wrap; }
+.wall-badge { font-size:9px; padding:0 5px; border-radius:8px; border:1px solid; line-height:1.5; }
+.wall-badge.g { color:#7dd8a0; border-color:rgba(125,216,160,0.5); }
+.wall-badge.r { color:#f0a500; border-color:rgba(240,165,0,0.5); }
+.wall-badge.c { color:#7aa8f0; border-color:rgba(122,168,240,0.5); }
+
 #chart { width: 100%; height: 100%; }
 #controls { position: absolute; top: 16px; left: 16px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 72%; }
 .ctrl-btn { padding: 5px 9px; border: 1px solid #444; border-radius: 6px; background: rgba(26,26,46,0.92); color: #e0e0e0; cursor: pointer; font-size: 11px; transition: all 0.2s; white-space: nowrap; }
@@ -246,6 +281,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       </div>
     </div>
     <div id="chart"></div>
+    <div id="ref-stats-bar"><span id="ref-stats-text"></span><button id="wall-toggle-btn" onclick="toggleWallView()">&#128448; 名片墙</button></div>
+    <div id="wall-view"></div>
     <div id="controls">
       <button class="ctrl-btn" id="home-btn" style="background:rgba(102,126,234,0.85);border-color:#667eea;color:#fff;display:none;letter-spacing:2px;padding:6px 14px;" title="返回首页">&#127968; 首页</button>
       <button class="ctrl-btn active" data-filter="all">全部关系</button>
@@ -1459,10 +1496,25 @@ function showRecommendedDetail(name) {
 }
 
 // ====== Main: showPerson & renderChart ======
+function showToast(msg) {
+  var old = document.getElementById('toast-tip');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+  var t = document.createElement('div');
+  t.id = 'toast-tip';
+  t.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(20,20,40,0.95);border:1px solid rgba(240,165,0,0.5);color:#f0d090;font-size:13px;padding:8px 18px;border-radius:20px;z-index:99999;pointer-events:none;white-space:nowrap;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 2500);
+}
+
 function showPerson(name) {
   currentPerson = name;
   var info = ALL_NODES[name];
-  if (!info) return;
+  if (!info) {
+    if (typeof RECOMMENDED_DETAILS !== 'undefined' && RECOMMENDED_DETAILS[name]) { showRecommendedDetail(name); }
+    else { showToast('「' + name + '」尚未录入图谱'); }
+    return;
+  }
   
   // Show home button when viewing a person
   var homeBtn = document.getElementById('home-btn');
@@ -1600,10 +1652,113 @@ function updateReferralFilterBtn(centerName) {
   }
 }
 
+
+// ====== 推荐视图增强：画像统计条 + 名片墙 ======
+var wallVisible = false;
+
+function isReferralView(centerName) {
+  return currentFilter === 'referral' && INFORMANTS.indexOf(centerName) !== -1;
+}
+
+function hideReferralExtras() {
+  var bar = document.getElementById('ref-stats-bar');
+  if (bar) bar.style.display = 'none';
+  var wall = document.getElementById('wall-view');
+  if (wall) wall.style.display = 'none';
+  var btn = document.getElementById('wall-toggle-btn');
+  if (btn) btn.classList.remove('active');
+  wallVisible = false;
+}
+
+function referralPersonInfo(n) {
+  var d = RECOMMENDED_DETAILS[n];
+  if (d) return { company: d.company || '', title: d.title || '', hasDetail: true };
+  var info = ALL_NODES[n];
+  if (info) return { company: info.company || '', title: info.title || '', hasDetail: false };
+  return { company: '', title: '', hasDetail: false };
+}
+
+function showReferralExtras(centerName) {
+  var bar = document.getElementById('ref-stats-bar');
+  if (!bar) return;
+  var referrals = REFERRAL_DATA[centerName] || [];
+  var inGraph = referrals.filter(function(n) { return !!ALL_NODES[n]; }).length;
+  var withDetail = referrals.filter(function(n) { return !!RECOMMENDED_DETAILS[n]; }).length;
+  var companyCount = {};
+  referrals.forEach(function(n) {
+    var c = referralPersonInfo(n).company || '未知';
+    companyCount[c] = (companyCount[c] || 0) + 1;
+  });
+  var topCompanies = Object.keys(companyCount).sort(function(a, b) { return companyCount[b] - companyCount[a]; }).slice(0, 3);
+  var compStr = topCompanies.map(function(c) { return c + ' ' + companyCount[c] + '人'; }).join(' / ');
+  document.getElementById('ref-stats-text').innerHTML =
+    '&#129309; <b>' + centerName + '</b> 推荐 <b>' + referrals.length + '</b> 人 · &#128376;&#65039; 已入图谱 <b>' + inGraph + '</b> · &#128196; 有履历 <b>' + withDetail + '</b>' + (compStr ? ' · &#127970; ' + compStr : '');
+  bar.style.display = 'flex';
+  if (wallVisible) renderWallView(centerName);
+}
+
+function toggleWallView() {
+  var wall = document.getElementById('wall-view');
+  var btn = document.getElementById('wall-toggle-btn');
+  if (!wall) return;
+  wallVisible = !wallVisible;
+  wall.style.display = wallVisible ? 'block' : 'none';
+  if (btn) btn.classList.toggle('active', wallVisible);
+  if (wallVisible && currentPerson) renderWallView(currentPerson);
+}
+
+function renderWallView(inf) {
+  var wall = document.getElementById('wall-view');
+  if (!wall) return;
+  var W = wall.clientWidth, H = wall.clientHeight;
+  if (W < 100 || H < 100) { setTimeout(function() { if (wallVisible) renderWallView(inf); }, 100); return; }
+  var cx = W / 2, cy = H / 2 + 10;
+  var referrals = (REFERRAL_DATA[inf] || []).slice();
+  var bigfish = referrals.filter(function(n) { return RECOMMENDED_DETAILS[n]; });
+  var others = referrals.filter(function(n) { return !RECOMMENDED_DETAILS[n]; });
+  others.sort(function(a, b) { return (NODE_DEGREES[b] || 0) - (NODE_DEGREES[a] || 0); });
+  var infInfo = ALL_NODES[inf] || {};
+  var html = '<div class="wall-center-card" style="left:' + cx + 'px;top:' + cy + 'px;">';
+  html += '<div class="wall-center-circle">' + inf + '</div>';
+  html += '<div class="wall-center-sub">' + (infInfo.company || '') + (infInfo.title ? ' · ' + infInfo.title : '') + '</div>';
+  html += '<div class="wall-center-sub" style="color:#8a8aa0;">推荐 ' + referrals.length + ' 人</div></div>';
+  function cardHtml(name, x, y, isBig) {
+    var p = referralPersonInfo(name);
+    var inGraph = !!ALL_NODES[name];
+    var cls = 'wall-card' + (isBig ? ' bigfish' : '') + (inGraph ? '' : ' ghost');
+    var sub = (p.company || '') + (p.title ? ' · ' + p.title : '');
+    if (!sub) sub = '暂无履历';
+    var badges = '';
+    if (inGraph) badges += '<span class="wall-badge g">图谱</span>';
+    if (p.hasDetail) badges += '<span class="wall-badge r">履历</span>';
+    var d = RECOMMENDED_DETAILS[name];
+    if (d && d.otherRelations) d.otherRelations.forEach(function(r) { badges += '<span class="wall-badge c">' + r.type + '</span>'; });
+    return '<div class="' + cls + '" style="left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;" onclick="showRecommendedDetail(\'' + escName(name) + '\')">'
+      + '<div class="wall-card-name">' + name + '</div>'
+      + '<div class="wall-card-sub">' + sub + '</div>'
+      + '<div class="wall-card-badges">' + badges + '</div></div>';
+  }
+  var rxIn = Math.max(W * 0.21, 115), ryIn = Math.max(H * 0.23, 85);
+  var rxOut = Math.max(W * 0.42, 185), ryOut = Math.max(H * 0.40, 150);
+  bigfish.forEach(function(name, i) {
+    var angle = -Math.PI / 2 + (2 * Math.PI * i / bigfish.length);
+    html += cardHtml(name, cx + rxIn * Math.cos(angle), cy + ryIn * Math.sin(angle), true);
+  });
+  others.forEach(function(name, i) {
+    var angle = -Math.PI / 2 + Math.PI / others.length + (2 * Math.PI * i / others.length);
+    html += cardHtml(name, cx + rxOut * Math.cos(angle), cy + ryOut * Math.sin(angle), false);
+  });
+  wall.innerHTML = html;
+}
+
+window.addEventListener('resize', function() { if (wallVisible && currentPerson && isReferralView(currentPerson)) renderWallView(currentPerson); });
+
 function renderChart(centerName) {
   var overlay = document.getElementById('welcome-overlay');
   if (overlay) overlay.style.display = 'none';
   updateReferralFilterBtn(centerName);
+  hideReferralExtras();
+  var refView = isReferralView(centerName);
   var conns = adjacency[centerName] || [];
   var filtered = currentFilter === 'all' ? conns : conns.filter(function(e) { return e.type === currentFilter; });
   
@@ -1621,7 +1776,15 @@ function renderChart(centerName) {
     var info = ALL_NODES[n] || {};
     var isCenter = n === centerName;
     var isKey = KEY_NODE_SET.has(n);
-    var sz = isCenter ? Math.max(nodeSizeByDegree(n), 45) : nodeSizeByDegree(n);
+    var sz;
+    if (refView) {
+      if (isCenter) sz = 52;
+      else if (RECOMMENDED_DETAILS[n]) sz = 30 + Math.min(8, Math.round((NODE_DEGREES[n] || 0) / 3));
+      else if (ALL_NODES[n]) sz = 22;
+      else sz = 15;
+    } else {
+      sz = isCenter ? Math.max(nodeSizeByDegree(n), 45) : nodeSizeByDegree(n);
+    }
     
     var nodeColor = '#4ecdc4';
     if (isCenter) nodeColor = '#667eea';
@@ -1634,27 +1797,44 @@ function renderChart(centerName) {
         nodeColor = EDGE_COLORS[keys[0]] || '#4ecdc4';
       }
     }
+    if (refView && !isCenter) {
+      if (RECOMMENDED_DETAILS[n]) nodeColor = '#f0a500';
+      else if (ALL_NODES[n]) nodeColor = '#6b5a1e';
+    }
     
+    var refBigFish = refView && !isCenter && RECOMMENDED_DETAILS[n];
+    var labelCfg = {
+      show: true,
+      fontSize: isCenter ? 14 : 11,
+      fontWeight: isCenter ? 'bold' : '600',
+      color: isCenter ? '#fff' : (isKey ? '#000' : '#e0e0e0'),
+      textBorderColor: isCenter ? 'rgba(0,0,0,0.5)' : (isKey ? 'rgba(255,215,0,0.6)' : 'rgba(0,0,0,0.6)'),
+      textBorderWidth: 1,
+      position: sz >= 20 ? 'inside' : 'right'
+    };
+    if (refView && !isCenter) {
+      var pinfo = referralPersonInfo(n);
+      var subLine = pinfo.company || pinfo.title || '';
+      labelCfg.position = 'bottom';
+      labelCfg.distance = 4;
+      labelCfg.formatter = '{a|' + n + '}' + (subLine ? '\n{b|' + subLine + '}' : '');
+      labelCfg.rich = {
+        a: { fontSize: refBigFish ? 12 : 10, fontWeight: '700', color: refBigFish ? '#ffd97a' : (ALL_NODES[n] ? '#e0e0e0' : '#999'), textBorderColor: 'rgba(0,0,0,0.75)', textBorderWidth: 2 },
+        b: { fontSize: 9, color: '#a8a8c0', padding: [2, 0, 0, 0], textBorderColor: 'rgba(0,0,0,0.75)', textBorderWidth: 2 }
+      };
+    }
     return {
       name: n,
       symbolSize: sz,
       value: NODE_DEGREES[n] || 1,
       itemStyle: {
         color: nodeColor,
-        borderColor: isCenter ? '#fff' : (isKey ? '#ffd700' : '#333'),
-        borderWidth: isCenter ? 3 : (isKey ? 2 : 1),
-        shadowBlur: isCenter ? 20 : (isKey ? 12 : 5),
-        shadowColor: isCenter ? 'rgba(102,126,234,0.5)' : (isKey ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)')
+        borderColor: isCenter ? '#fff' : (refBigFish ? '#ffe9b0' : (isKey ? '#ffd700' : '#333')),
+        borderWidth: isCenter ? 3 : (refBigFish ? 2 : (isKey ? 2 : 1)),
+        shadowBlur: isCenter ? 20 : (refBigFish ? 16 : (isKey ? 12 : 5)),
+        shadowColor: isCenter ? 'rgba(102,126,234,0.5)' : (refBigFish ? 'rgba(240,165,0,0.5)' : (isKey ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)'))
       },
-      label: {
-        show: true,
-        fontSize: isCenter ? 14 : 11,
-        fontWeight: isCenter ? 'bold' : '600',
-        color: isCenter ? '#fff' : (isKey ? '#000' : '#e0e0e0'),
-        textBorderColor: isCenter ? 'rgba(0,0,0,0.5)' : (isKey ? 'rgba(255,215,0,0.6)' : 'rgba(0,0,0,0.6)'),
-        textBorderWidth: 1,
-        position: sz >= 20 ? 'inside' : 'right'
-      },
+      label: labelCfg,
       category: isCenter ? 0 : getCategory(n)
     };
   });
@@ -1715,7 +1895,7 @@ function renderChart(centerName) {
             // 未入库：幽灵节点（虚框）
             chartNodes.push({
               name: rn,
-              symbolSize: 22,
+              symbolSize: 16,
               value: 0,
               itemStyle: {
                 color: 'rgba(240,165,0,0.15)',
@@ -1773,8 +1953,9 @@ function renderChart(centerName) {
       links: chartEdges,
       roam: true,
       draggable: true,
-      layoutAnimation: false, labelLayout: { hideOverlap: true },
-      force: { repulsion: 1100, gravity: 0.06, edgeLength: [150, 300], friction: 0.25 },
+      zoom: refView ? 1.25 : 1,
+      layoutAnimation: refView ? true : false, labelLayout: { hideOverlap: true },
+      force: { repulsion: 1100, gravity: 0.06, edgeLength: [150, 300], friction: refView ? 0.18 : 0.25 },
       emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
       categories: [
         { name: '中心', itemStyle: { color: '#667eea' } },
@@ -1788,6 +1969,7 @@ function renderChart(centerName) {
   };
   
   chart.setOption(option, false);
+  if (refView) { showReferralExtras(centerName); }
   
   document.getElementById('sidebar-footer').innerHTML =
     '当前: ' + centerName + ' | 显示 ' + connectedNames.length + ' 个关联 / 总计 ' + allNames.length + ' 节点 / ' + chartEdges.length + ' 条边';
@@ -1952,6 +2134,15 @@ document.addEventListener('click', function(e) {
 var searchInput = document.getElementById('search-input');
 var searchResults = document.getElementById('search-results');
 var allNameList = Object.keys(ALL_NODES).sort();
+// 幽灵节点（被推荐但尚未入图谱的人）也纳入搜索范围
+var GHOST_NAMES = [];
+try {
+  INFORMANTS.forEach(function(inf) {
+    (REFERRAL_DATA[inf] || []).forEach(function(n) {
+      if (!ALL_NODES[n] && GHOST_NAMES.indexOf(n) === -1) GHOST_NAMES.push(n);
+    });
+  });
+} catch (e) {}
 
 // Tag search with autocomplete dropdown
 var tagSearchInput = document.getElementById('tag-search');
@@ -2046,6 +2237,7 @@ searchInput.addEventListener('input', function() {
   if (!q) { searchResults.innerHTML = ''; return; }
   
   var matches = allNameList.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 20);
+  var ghostMatches = GHOST_NAMES.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 10);
   var html = '';
   matches.forEach(function(n) {
     var info = ALL_NODES[n];
@@ -2055,6 +2247,14 @@ searchInput.addEventListener('input', function() {
     html += '<div class="info">' + (info.company || '') + ' | ' + (info.title || '') + '</div>';
     html += '</div>';
   });
+  ghostMatches.forEach(function(n) {
+    var d = RECOMMENDED_DETAILS[n];
+    html += '<div class="result-item result-ghost" data-person="' + escName(n) + '" data-ghost="1">';
+    html += '<div class="name">' + n + ' <span style="color:#f0a500;font-size:10px;">&#128376;&#65039; 推荐·未入图谱</span></div>';
+    html += '<div class="info">' + (d ? (d.company || '') + ' | ' + (d.title || '') : '暂无履历') + '</div>';
+    html += '</div>';
+  });
+  if (!html) html = '<div style="padding:12px;font-size:13px;color:#666;text-align:center;">未找到匹配的人才</div>';
   searchResults.innerHTML = html;
 });
 
@@ -2063,7 +2263,9 @@ searchResults.addEventListener('click', function(e) {
   var item = e.target.closest('.result-item');
   if (item) {
     var pname = item.getAttribute('data-person');
-    if (ALL_NODES[pname]) showPerson(pname);
+    if (ALL_NODES[pname]) { showPerson(pname); }
+    else if (item.getAttribute('data-ghost') === '1') { showRecommendedDetail(pname); }
+    else { showToast('「' + pname + '」尚未录入图谱'); }
   }
 });
 
